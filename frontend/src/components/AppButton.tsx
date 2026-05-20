@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from "react-native";
-import { theme } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 
 type Variant = "primary" | "secondary" | "outline";
 
@@ -22,6 +22,7 @@ export function AppButton({
   testID,
   style,
 }: AppButtonProps) {
+  const { theme } = useTheme();
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -32,7 +33,17 @@ export function AppButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.base,
-        styles[variant],
+        {
+          backgroundColor:
+            variant === "primary"
+              ? theme.colors.primary
+              : variant === "secondary"
+              ? theme.colors.surfaceHighlight
+              : theme.colors.background,
+          borderWidth: variant === "outline" ? 1 : 0,
+          borderColor: theme.colors.border,
+          borderRadius: theme.radius.full,
+        },
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
         style,
@@ -41,7 +52,20 @@ export function AppButton({
       {loading ? (
         <ActivityIndicator color={variant === "primary" ? theme.colors.primaryForeground : theme.colors.primary} />
       ) : (
-        <Text style={[styles.textBase, styles[`text_${variant}`]]}>{label}</Text>
+        <Text
+          style={[
+            styles.textBase,
+            {
+              color:
+                variant === "primary"
+                  ? theme.colors.primaryForeground
+                  : theme.colors.textMain,
+              fontSize: theme.typography.body,
+            },
+          ]}
+        >
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -50,39 +74,11 @@ export function AppButton({
 const styles = StyleSheet.create({
   base: {
     minHeight: 48,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: theme.spacing.l,
+    paddingHorizontal: 24,
     alignItems: "center",
     justifyContent: "center",
   },
-  primary: {
-    backgroundColor: theme.colors.primary,
-  },
-  secondary: {
-    backgroundColor: theme.colors.surfaceHighlight,
-  },
-  outline: {
-    backgroundColor: theme.colors.background,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  disabled: {
-    opacity: 0.55,
-  },
-  pressed: {
-    transform: [{ scale: 0.98 }],
-  },
-  textBase: {
-    fontSize: theme.typography.body,
-    fontWeight: "600",
-  },
-  text_primary: {
-    color: theme.colors.primaryForeground,
-  },
-  text_secondary: {
-    color: theme.colors.textMain,
-  },
-  text_outline: {
-    color: theme.colors.textMain,
-  },
+  disabled: { opacity: 0.55 },
+  pressed: { transform: [{ scale: 0.98 }] },
+  textBase: { fontWeight: "600" },
 });

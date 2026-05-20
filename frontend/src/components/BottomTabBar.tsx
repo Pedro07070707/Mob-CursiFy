@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { theme } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { AppTab } from "../types";
 
 interface TabItem {
@@ -16,8 +16,18 @@ interface BottomTabBarProps {
 }
 
 export function BottomTabBar({ tabs, activeTab, onChange }: BottomTabBarProps) {
+  const { theme } = useTheme();
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          borderTopColor: theme.colors.border,
+          backgroundColor: theme.colors.background,
+          paddingHorizontal: theme.spacing.m,
+        },
+      ]}
+    >
       {tabs.map((tab) => {
         const active = activeTab === tab.key;
         return (
@@ -27,14 +37,16 @@ export function BottomTabBar({ tabs, activeTab, onChange }: BottomTabBarProps) {
             accessibilityRole="button"
             accessibilityLabel={`Abrir aba ${tab.label}`}
             onPress={() => onChange(tab.key)}
-            style={({ pressed }) => [styles.item, active && styles.activeItem, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.item,
+              active && { backgroundColor: theme.colors.activeTabBg },
+              pressed && styles.pressed,
+            ]}
           >
-            <Ionicons
-              name={tab.icon}
-              size={20}
-              color={active ? theme.colors.primary : theme.colors.textMuted}
-            />
-            <Text style={[styles.label, active && styles.activeLabel]}>{tab.label}</Text>
+            <Ionicons name={tab.icon} size={20} color={active ? theme.colors.primary : theme.colors.textMuted} />
+            <Text style={[styles.label, { color: active ? theme.colors.primary : theme.colors.textMuted }]}>
+              {tab.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -48,33 +60,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    paddingTop: theme.spacing.s,
-    paddingBottom: theme.spacing.s,
-    paddingHorizontal: theme.spacing.m,
-    backgroundColor: theme.colors.background,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
   item: {
     minWidth: 44,
     minHeight: 44,
-    borderRadius: theme.radius.full,
-    paddingHorizontal: theme.spacing.s,
+    borderRadius: 999,
+    paddingHorizontal: 8,
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
   },
-  activeItem: {
-    backgroundColor: "#EEF2FF",
-  },
-  pressed: {
-    transform: [{ scale: 0.96 }],
-  },
-  label: {
-    fontSize: 11,
-    color: theme.colors.textMuted,
-    fontWeight: "600",
-  },
-  activeLabel: {
-    color: theme.colors.primary,
-  },
+  pressed: { transform: [{ scale: 0.96 }] },
+  label: { fontSize: 11, fontWeight: "600" },
 });

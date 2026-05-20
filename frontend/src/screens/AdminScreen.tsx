@@ -1,186 +1,275 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { theme } from "../constants/theme";
+import { ActivityIndicator, Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useTheme } from "../contexts/ThemeContext";
 import adminService from "../services/adminService";
 import courseService from "../services/courseService";
 import { AdminOverview, Course, User } from "../types";
+
+type AdminView = "dashboard" | "courses" | "users";
 
 interface AdminScreenProps {
   isAdmin: boolean;
   data: AdminOverview | null;
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+// ─── Sub-tela: Dashboard ──────────────────────────────────────────────────────
+function Dashboard({ data, onNavigate }: { data: AdminOverview | null; onNavigate: (v: AdminView) => void }) {
+  const { theme } = useTheme();
+
+  const stats = data ? [
+    { label: "Usuários", value: data.users_total },
+    { label: "Alunos", value: data.students_total },
+    { label: "Professores", value: data.teachers_total },
+    { label: "Admins", value: data.admins_total },
+    { label: "Cursos", value: data.courses_total },
+    { label: "Inscrições", value: data.enrollments_total },
+  ] : [];
+
+  const navButtons: { view: AdminView; icon: keyof typeof Ionicons.glyphMap; label: string; desc: string }[] = [
+    { view: "courses", icon: "book-outline", label: "Gerenciar Cursos", desc: "Visualize e exclua cursos da plataforma" },
+    { view: "users", icon: "people-outline", label: "Gerenciar Usuários", desc: "Ative ou inative contas de usuários" },
+  ];
+
   return (
-    <View style={styles.card}>
-      <Text style={styles.value}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
+    <ScrollView contentContainerStyle={{ paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.xxl }}>
+      <Text style={{ fontSize: theme.typography.h2, fontWeight: "700", color: theme.colors.textMain }}>Painel administrativo</Text>
+      <Text style={{ marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.body }}>Visão geral da plataforma</Text>
+
+      {data && (
+        <View style={{ marginTop: theme.spacing.l, flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.s }}>
+          {stats.map((s) => (
+            <View key={s.label} style={{ width: "48%", borderRadius: theme.radius.md, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, padding: theme.spacing.m, minHeight: 88, justifyContent: "center" }}>
+              <Text style={{ fontSize: 26, fontWeight: "800", color: theme.colors.primary }}>{s.value}</Text>
+              <Text style={{ marginTop: 4, color: theme.colors.textMuted, fontSize: theme.typography.small }}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <Text style={{ marginTop: theme.spacing.l, marginBottom: theme.spacing.m, fontSize: theme.typography.body, fontWeight: "700", color: theme.colors.textMain }}>Ações rápidas</Text>
+
+      {navButtons.map((btn) => (
+        <Pressable
+          key={btn.view}
+          onPress={() => onNavigate(btn.view)}
+          style={({ pressed }) => [
+            styles.navCard,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.border, borderRadius: theme.radius.lg, marginBottom: theme.spacing.m },
+            pressed && { opacity: 0.8, transform: [{ scale: 0.99 }] },
+          ]}
+        >
+          <View style={[styles.iconWrap, { backgroundColor: theme.colors.activeTabBg }]}>
+            <Ionicons name={btn.icon} size={24} color={theme.colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontWeight: "700", fontSize: theme.typography.body, color: theme.colors.textMain }}>{btn.label}</Text>
+            <Text style={{ marginTop: 2, fontSize: theme.typography.small, color: theme.colors.textMuted }}>{btn.desc}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={theme.colors.textMuted} />
+        </Pressable>
+      ))}
+    </ScrollView>
+  );
+}
+
+// ─── Sub-tela: Cursos ─────────────────────────────────────────────────────────
+function CoursesPanel({ onBack }: { onBack: () => void }) {
+  const { theme } = useTheme();
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    courseService.getAll().then(setCourses).finally(() => setLoading(false));
+  }, []);
+
+  const handleDelete = (course: Course) => {
+    Alert.alert("Excluir curso", `Deseja excluir "${course.title}"?`, [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir", style: "destructive", onPress: async () => {
+          setDeletingId(course.course_id);
+          try {
+            await courseService.remove(course.course_id);
+            setCourses((prev) => prev.filter((c) => c.course_id !== course.course_id));
+          } finally { setDeletingId(null); }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={[styles.subScreen, { backgroundColor: theme.colors.background }]}>
+      <SubHeader title="Cursos" count={courses.length} onBack={onBack} />
+      {loading ? (
+        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: theme.spacing.xl }} />
+      ) : (
+        <FlatList
+          data={courses}
+          keyExtractor={(item) => item.course_id}
+          contentContainerStyle={{ paddingHorizontal: theme.spacing.l, paddingBottom: theme.spacing.xxl }}
+          ListEmptyComponent={<Text style={{ color: theme.colors.textMuted, marginTop: theme.spacing.xl, fontSize: theme.typography.body }}>Nenhum curso encontrado.</Text>}
+          renderItem={({ item }) => (
+            <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
+              <View style={[styles.iconWrap, { backgroundColor: theme.colors.surfaceHighlight }]}>
+                <Ionicons name="book-outline" size={18} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginRight: theme.spacing.m }}>
+                <Text style={{ fontWeight: "600", color: theme.colors.textMain, fontSize: theme.typography.body }} numberOfLines={1}>{item.title}</Text>
+                <Text style={{ color: theme.colors.textMuted, fontSize: theme.typography.small, marginTop: 2 }}>{item.category} • {item.teacher_name}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: theme.colors.error }]}
+                onPress={() => handleDelete(item)}
+                disabled={deletingId === item.course_id}
+              >
+                {deletingId === item.course_id
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Ionicons name="trash-outline" size={16} color="#fff" />}
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 }
 
-export function AdminScreen({ isAdmin, data }: AdminScreenProps) {
+// ─── Sub-tela: Usuários ───────────────────────────────────────────────────────
+function UsersPanel({ onBack }: { onBack: () => void }) {
+  const { theme } = useTheme();
   const [users, setUsers] = useState<User[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
   useEffect(() => {
-    if (!isAdmin) return;
-    setLoadingUsers(true);
-    adminService.getUsers()
-      .then(setUsers)
-      .finally(() => setLoadingUsers(false));
-
-    setLoadingCourses(true);
-    courseService.getAll()
-      .then(setCourses)
-      .finally(() => setLoadingCourses(false));
-  }, [isAdmin]);
+    adminService.getUsers().then(setUsers).finally(() => setLoading(false));
+  }, []);
 
   const handleToggle = async (user: User) => {
     setTogglingId(user.user_id);
     try {
       const updated = await adminService.setUserStatus(user.user_id, !user.active);
       setUsers((prev) => prev.map((u) => u.user_id === updated.user_id ? updated : u));
-    } finally {
-      setTogglingId(null);
-    }
+    } finally { setTogglingId(null); }
   };
 
-  const handleDeleteCourse = async (courseId: string) => {
-    setDeletingId(courseId);
-    try {
-      await courseService.remove(courseId);
-      setCourses((prev) => prev.filter((c) => c.course_id !== courseId));
-    } finally {
-      setDeletingId(null);
-    }
+  const roleIcon: Record<string, keyof typeof Ionicons.glyphMap> = {
+    student: "person-outline",
+    teacher: "school-outline",
+    admin: "shield-checkmark-outline",
   };
+
+  return (
+    <View style={[styles.subScreen, { backgroundColor: theme.colors.background }]}>
+      <SubHeader title="Usuários" count={users.length} onBack={onBack} />
+      {loading ? (
+        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: theme.spacing.xl }} />
+      ) : (
+        <FlatList
+          data={users}
+          keyExtractor={(item) => item.user_id}
+          contentContainerStyle={{ paddingHorizontal: theme.spacing.l, paddingBottom: theme.spacing.xxl }}
+          ListEmptyComponent={<Text style={{ color: theme.colors.textMuted, marginTop: theme.spacing.xl, fontSize: theme.typography.body }}>Nenhum usuário encontrado.</Text>}
+          renderItem={({ item }) => (
+            <View style={[styles.row, { borderBottomColor: theme.colors.border }]}>
+              <View style={[styles.iconWrap, { backgroundColor: theme.colors.surfaceHighlight }]}>
+                <Ionicons name={roleIcon[item.role] ?? "person-outline"} size={18} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, marginRight: theme.spacing.m }}>
+                <Text style={{ fontWeight: "600", color: theme.colors.textMain, fontSize: theme.typography.body }}>{item.username}</Text>
+                <Text style={{ color: theme.colors.textMuted, fontSize: theme.typography.small, marginTop: 2 }}>{item.email} • {item.role}</Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: item.active ? theme.colors.error : theme.colors.success }]}
+                onPress={() => handleToggle(item)}
+                disabled={togglingId === item.user_id}
+              >
+                {togglingId === item.user_id
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Ionicons name={item.active ? "close-outline" : "checkmark-outline"} size={16} color="#fff" />}
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
+    </View>
+  );
+}
+
+// ─── Cabeçalho das sub-telas ──────────────────────────────────────────────────
+function SubHeader({ title, count, onBack }: { title: string; count: number; onBack: () => void }) {
+  const { theme } = useTheme();
+  return (
+    <View style={[styles.subHeader, { borderBottomColor: theme.colors.border, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.l }]}>
+      <Pressable onPress={onBack} style={styles.backBtn} accessibilityLabel="Voltar">
+        <Ionicons name="arrow-back" size={22} color={theme.colors.primary} />
+      </Pressable>
+      <Text style={{ fontSize: theme.typography.h2, fontWeight: "700", color: theme.colors.textMain }}>{title}</Text>
+      <View style={[styles.badge, { backgroundColor: theme.colors.activeTabBg }]}>
+        <Text style={{ fontSize: theme.typography.small, fontWeight: "700", color: theme.colors.primary }}>{count}</Text>
+      </View>
+    </View>
+  );
+}
+
+// ─── Tela principal ───────────────────────────────────────────────────────────
+export function AdminScreen({ isAdmin, data }: AdminScreenProps) {
+  const { theme } = useTheme();
+  const [view, setView] = useState<AdminView>("dashboard");
 
   if (!isAdmin) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.title}>Área administrativa</Text>
-        <Text style={styles.subtitle}>Somente usuários admin podem visualizar esta área.</Text>
+      <View style={{ flex: 1, backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l }}>
+        <Text style={{ fontSize: theme.typography.h2, fontWeight: "700", color: theme.colors.textMain }}>Área administrativa</Text>
+        <Text style={{ marginTop: theme.spacing.s, fontSize: theme.typography.body, color: theme.colors.textMuted }}>Somente usuários admin podem visualizar esta área.</Text>
       </View>
     );
   }
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: theme.spacing.l }}>
-      <Text style={styles.title}>Painel administrativo</Text>
-
-      {data && (
-        <View style={styles.grid}>
-          <StatCard label="Usuários" value={data.users_total} />
-          <StatCard label="Alunos" value={data.students_total} />
-          <StatCard label="Professores" value={data.teachers_total} />
-          <StatCard label="Admins" value={data.admins_total} />
-          <StatCard label="Cursos" value={data.courses_total} />
-          <StatCard label="Inscrições" value={data.enrollments_total} />
-        </View>
-      )}
-
-      <Text style={styles.sectionTitle}>Cursos ativos</Text>
-      {loadingCourses ? (
-        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: theme.spacing.m }} />
-      ) : courses.map((course) => (
-        <View key={course.course_id} style={styles.row}>
-          <View style={styles.rowInfo}>
-            <Text style={styles.rowName} numberOfLines={1}>{course.title}</Text>
-            <Text style={styles.rowMeta}>{course.category} • {course.teacher_name}</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.btnDelete]}
-            onPress={() => handleDeleteCourse(course.course_id)}
-            disabled={deletingId === course.course_id}
-          >
-            {deletingId === course.course_id
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={styles.actionText}>Apagar</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      ))}
-
-      <Text style={styles.sectionTitle}>Usuários cadastrados</Text>
-      {loadingUsers ? (
-        <ActivityIndicator color={theme.colors.primary} style={{ marginTop: theme.spacing.m }} />
-      ) : users.map((item) => (
-        <View key={item.user_id} style={styles.row}>
-          <View style={styles.rowInfo}>
-            <Text style={styles.rowName}>{item.username}</Text>
-            <Text style={styles.rowMeta}>{item.email} • {item.role}</Text>
-          </View>
-          <TouchableOpacity
-            style={[styles.actionBtn, item.active ? styles.btnActive : styles.btnInactive]}
-            onPress={() => handleToggle(item)}
-            disabled={togglingId === item.user_id}
-          >
-            {togglingId === item.user_id
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={styles.actionText}>{item.active ? "Inativar" : "Ativar"}</Text>
-            }
-          </TouchableOpacity>
-        </View>
-      ))}
-    </ScrollView>
-  );
+  if (view === "courses") return <CoursesPanel onBack={() => setView("dashboard")} />;
+  if (view === "users") return <UsersPanel onBack={() => setView("dashboard")} />;
+  return <Dashboard data={data} onNavigate={setView} />;
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: theme.spacing.l,
-    paddingTop: theme.spacing.l,
+  subScreen: { flex: 1 },
+  subHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
   },
-  title: { fontSize: theme.typography.h2, fontWeight: "700", color: theme.colors.textMain },
-  subtitle: { marginTop: theme.spacing.s, fontSize: theme.typography.body, color: theme.colors.textMuted },
-  grid: { marginTop: theme.spacing.l, flexDirection: "row", flexWrap: "wrap", gap: theme.spacing.s },
-  card: {
-    width: "48%",
-    borderRadius: theme.radius.md,
+  backBtn: { padding: 4 },
+  badge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 999 },
+  navCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.m,
-    minHeight: 96,
-    justifyContent: "center",
+    gap: 14,
   },
-  value: { fontSize: 28, fontWeight: "800", color: theme.colors.primary },
-  label: { marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.small },
-  sectionTitle: {
-    marginTop: theme.spacing.l,
-    marginBottom: theme.spacing.m,
-    fontSize: 16,
-    fontWeight: "700",
-    color: theme.colors.textMain,
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: theme.spacing.m,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    gap: 12,
   },
-  rowInfo: { flex: 1, marginRight: theme.spacing.m },
-  rowName: { fontWeight: "600", color: theme.colors.textMain, fontSize: theme.typography.body },
-  rowMeta: { color: theme.colors.textMuted, fontSize: theme.typography.small, marginTop: 2 },
   actionBtn: {
-    paddingHorizontal: theme.spacing.m,
-    paddingVertical: theme.spacing.s,
-    borderRadius: theme.radius.full,
-    minWidth: 80,
+    width: 36,
+    height: 36,
+    borderRadius: 999,
     alignItems: "center",
+    justifyContent: "center",
   },
-  btnDelete: { backgroundColor: "#ef4444" },
-  btnActive: { backgroundColor: "#ef4444" },
-  btnInactive: { backgroundColor: "#22c55e" },
-  actionText: { color: "#fff", fontWeight: "600", fontSize: theme.typography.small },
 });

@@ -10,12 +10,14 @@
  * Sessão persistida no AsyncStorage (chave: cursify_session).
  */
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
   Platform,
+  Pressable,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -23,7 +25,7 @@ import {
 } from "react-native";
 import { BottomTabBar } from "../src/components/BottomTabBar";
 import { pickCourseImage } from "../src/constants/images";
-import { theme } from "../src/constants/theme";
+import { ThemeProvider, useTheme } from "../src/contexts/ThemeContext";
 import { AdminScreen } from "../src/screens/AdminScreen";
 import { AuthScreen } from "../src/screens/AuthScreen";
 import { CatalogScreen } from "../src/screens/CatalogScreen";
@@ -52,6 +54,15 @@ type AuthMode = "login" | "register";
 const SESSION_KEY = "cursify_session";
 
 export default function Index() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
+  );
+}
+
+function AppContent() {
+  const { theme, isDark, toggleTheme } = useTheme();
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   const [authMode, setAuthMode] = useState<AuthMode>("login");
@@ -371,14 +382,14 @@ export default function Index() {
   // Tela de loading inicial (restauração de sessão)
   if (screenLoading && !user)
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView style={[styles.centered, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator color={theme.colors.primary} size="large" />
       </SafeAreaView>
     );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+      <StatusBar style={isDark ? "light" : "dark"} />
 
       {!token || !user ? (
         <AuthScreen
@@ -391,15 +402,22 @@ export default function Index() {
         />
       ) : (
         <View style={styles.flex}>
-          <View style={styles.header}>
-            <Text style={styles.appName}>CursiFy</Text>
-            <Text style={styles.userHint}>{user.username} • {user.role}</Text>
+          <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border, paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.m }]}>
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={[styles.appName, { color: theme.colors.textMain }]}>CursiFy</Text>
+                <Text style={[styles.userHint, { color: theme.colors.textMuted, fontSize: theme.typography.small, marginTop: theme.spacing.s }]}>{user.username} • {user.role}</Text>
+              </View>
+              <Pressable onPress={toggleTheme} accessibilityLabel="Alternar tema" style={styles.themeToggle}>
+                <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={22} color={theme.colors.textMuted} />
+              </Pressable>
+            </View>
           </View>
 
           {screenLoading ? (
             <View style={styles.loaderWrap}>
               <ActivityIndicator color={theme.colors.primary} size="large" />
-              <Text style={styles.loadingText}>Sincronizando dados...</Text>
+              <Text style={[styles.loadingText, { color: theme.colors.textMuted, fontSize: theme.typography.body }]}>Sincronizando dados...</Text>
             </View>
           ) : (
             <Animated.View style={[styles.flex, { opacity: fadeAnim }]}>
@@ -407,7 +425,7 @@ export default function Index() {
             </Animated.View>
           )}
 
-          {feedback ? <Text style={styles.feedback}>{feedback}</Text> : null}
+          {feedback ? <Text style={[styles.feedback, { color: theme.colors.primary, fontSize: theme.typography.small, backgroundColor: theme.colors.feedbackBg }]}>{feedback}</Text> : null}
 
           {!selectedCourse && (
             <BottomTabBar tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
@@ -419,26 +437,15 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: theme.colors.background },
+  safeArea: { flex: 1 },
   flex: { flex: 1 },
-  header: {
-    paddingHorizontal: theme.spacing.l,
-    paddingTop: theme.spacing.l,
-    paddingBottom: theme.spacing.m,
-    backgroundColor: theme.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-  },
-  appName: { fontSize: 28, fontWeight: "800", color: theme.colors.textMain },
-  userHint: { marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.small },
-  loaderWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: theme.spacing.m },
-  loadingText: { color: theme.colors.textMuted, fontSize: theme.typography.body },
-  feedback: {
-    paddingHorizontal: theme.spacing.l,
-    paddingVertical: theme.spacing.s,
-    color: theme.colors.primary,
-    fontSize: theme.typography.small,
-    backgroundColor: "#EEF2FF",
-  },
-  centered: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: theme.colors.background },
+  header: { borderBottomWidth: 1 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  appName: { fontSize: 28, fontWeight: "800" },
+  userHint: {},
+  themeToggle: { padding: 8 },
+  loaderWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
+  loadingText: {},
+  feedback: { paddingHorizontal: 24, paddingVertical: 8 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
 });

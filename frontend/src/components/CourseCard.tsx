@@ -1,6 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { pickCourseImage } from "../constants/images";
-import { theme } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 import { Course } from "../types";
 
 interface CourseCardProps {
@@ -9,6 +9,7 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, onPress }: CourseCardProps) {
+  const { theme } = useTheme();
   const imageUri = course.thumbnail_base64 || pickCourseImage(course.category, course.title);
 
   return (
@@ -17,14 +18,27 @@ export function CourseCard({ course, onPress }: CourseCardProps) {
       accessibilityLabel={`Abrir curso ${course.title}`}
       testID={`course-card-${course.course_id}`}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          borderColor: theme.colors.border,
+          backgroundColor: theme.colors.background,
+          borderRadius: theme.radius.lg,
+          marginBottom: theme.spacing.m,
+        },
+        pressed && styles.pressed,
+      ]}
     >
-      <Image source={{ uri: imageUri }} style={styles.banner} />
-      <View style={styles.content}>
-        <Text style={styles.category}>{course.category}</Text>
-        <Text style={styles.title}>{course.title}</Text>
-        <Text style={styles.meta}>{course.teacher_name}</Text>
-        <Text style={styles.meta}>
+      <Image source={{ uri: imageUri }} style={[styles.banner, { backgroundColor: theme.colors.surfaceHighlight }]} />
+      <View style={[styles.content, { gap: theme.spacing.s, padding: theme.spacing.m }]}>
+        <Text style={[styles.category, { color: theme.colors.primary, fontSize: theme.typography.small }]}>
+          {course.category}
+        </Text>
+        <Text style={[styles.title, { color: theme.colors.textMain }]}>{course.title}</Text>
+        <Text style={[styles.meta, { color: theme.colors.textMuted, fontSize: theme.typography.small }]}>
+          {course.teacher_name}
+        </Text>
+        <Text style={[styles.meta, { color: theme.colors.textMuted, fontSize: theme.typography.small }]}>
           {course.lessons_count} aulas • {course.estimated_hours}h • {course.enrolled_count} inscritos
         </Text>
       </View>
@@ -33,39 +47,11 @@ export function CourseCard({ course, onPress }: CourseCardProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: theme.radius.lg,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-    marginBottom: theme.spacing.m,
-  },
-  pressed: {
-    transform: [{ scale: 0.99 }],
-    opacity: 0.95,
-  },
-  banner: {
-    width: "100%",
-    height: 130,
-    backgroundColor: theme.colors.surfaceHighlight,
-  },
-  content: {
-    padding: theme.spacing.m,
-    gap: theme.spacing.s,
-  },
-  category: {
-    fontSize: theme.typography.small,
-    color: theme.colors.primary,
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 20,
-    color: theme.colors.textMain,
-    fontWeight: "700",
-  },
-  meta: {
-    color: theme.colors.textMuted,
-    fontSize: theme.typography.small,
-  },
+  card: { overflow: "hidden", borderWidth: 1 },
+  pressed: { transform: [{ scale: 0.99 }], opacity: 0.95 },
+  banner: { width: "100%", height: 130 },
+  content: {},
+  category: { fontWeight: "600" },
+  title: { fontSize: 20, fontWeight: "700" },
+  meta: {},
 });

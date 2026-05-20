@@ -1,18 +1,29 @@
 import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
-import { theme } from "../constants/theme";
+import { useTheme } from "../contexts/ThemeContext";
 
 interface AppInputProps extends TextInputProps {
   label: string;
 }
 
 export function AppInput({ label, ...props }: AppInputProps) {
+  const { theme } = useTheme();
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: theme.colors.textMuted, fontSize: theme.typography.small }]}>{label}</Text>
       <TextInput
         {...props}
         testID={props.testID}
-        style={[styles.input, props.style]}
+        style={[
+          styles.input,
+          {
+            borderColor: theme.colors.border,
+            borderRadius: theme.radius.md,
+            backgroundColor: theme.colors.surface,
+            fontSize: theme.typography.body,
+            color: theme.colors.textMain,
+          },
+          props.style,
+        ]}
         placeholderTextColor={theme.colors.textMuted}
       />
     </View>
@@ -20,23 +31,7 @@ export function AppInput({ label, ...props }: AppInputProps) {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    marginBottom: theme.spacing.m,
-  },
-  label: {
-    fontSize: theme.typography.small,
-    color: theme.colors.textMuted,
-    marginBottom: theme.spacing.s,
-    fontWeight: "500",
-  },
-  input: {
-    minHeight: 48,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: theme.spacing.m,
-    fontSize: theme.typography.body,
-    color: theme.colors.textMain,
-  },
+  wrapper: { marginBottom: 16 },
+  label: { marginBottom: 8, fontWeight: "500" },
+  input: { minHeight: 48, borderWidth: 1, paddingHorizontal: 16 },
 });

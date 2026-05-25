@@ -43,7 +43,7 @@ export function AuthScreen(props: AuthScreenProps) {
   const [loginEmailValue, setLoginEmailValue] = useState(loginEmail);
   const [loginPasswordValue, setLoginPasswordValue] = useState(loginPassword);
 
-  const roleOptions: UserRole[] = ["student", "teacher", "admin"];
+  const roleOptions: UserRole[] = ["student"];
 
   const handleRegister = async () => {
     setRegisterError("");

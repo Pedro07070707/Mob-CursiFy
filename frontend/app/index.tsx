@@ -16,6 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Platform,
   Pressable,
   SafeAreaView,
@@ -270,7 +271,6 @@ function AppContent() {
     setFeedback("");
     try {
       await enrollmentService.create(user.user_id, selectedCourse.course_id);
-      setFeedback("Inscrição confirmada com sucesso!");
       await loadInitialData(user);
       setSelectedCourse(await courseService.getById(selectedCourse.course_id));
       setActiveTab("my-courses");
@@ -404,13 +404,15 @@ function AppContent() {
         <View style={styles.flex}>
           <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border, paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.m }]}>
             <View style={styles.headerRow}>
-              <View>
-                <Text style={[styles.appName, { color: theme.colors.textMain }]}>CursiFy</Text>
+              <View style={styles.headerSide} />
+              <View style={styles.headerCenter}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <Text style={[styles.appName, { color: theme.colors.textMain }]}>CursiFy</Text>
+                  <Image source={require("../assets/images/shared image.jpg")} style={{ width: 58, height: 58, borderRadius: 29 }} />
+                </View>
                 <Text style={[styles.userHint, { color: theme.colors.textMuted, fontSize: theme.typography.small, marginTop: theme.spacing.s }]}>{user.username} • {user.role}</Text>
               </View>
-              <Pressable onPress={toggleTheme} accessibilityLabel="Alternar tema" style={styles.themeToggle}>
-                <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={22} color={theme.colors.textMuted} />
-              </Pressable>
+              <View style={styles.headerSide} />
             </View>
           </View>
 
@@ -440,9 +442,11 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   flex: { flex: 1 },
   header: { borderBottomWidth: 1 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  headerRow: { flexDirection: "row", alignItems: "center" },
+  headerCenter: { flex: 1, alignItems: "center", justifyContent: "center" },
+  headerSide: { width: 38, alignItems: "flex-end" },
   appName: { fontSize: 28, fontWeight: "800" },
-  userHint: {},
+  userHint: { textAlign: "center" },
   themeToggle: { padding: 8 },
   loaderWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 16 },
   loadingText: {},

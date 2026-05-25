@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { AppButton } from "../components/AppButton";
 import { AppInput } from "../components/AppInput";
 import { defaultAvatarBase64 } from "../constants/images";
@@ -15,7 +16,7 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedback }: ProfileScreenProps) {
-  const { theme } = useTheme();
+  const { theme, isDark, toggleTheme } = useTheme();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState(user.username);
   const [bio, setBio] = useState(user.bio);
@@ -50,6 +51,12 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
             <AppButton label="Editar perfil" variant="secondary" onPress={() => setEditing(true)} style={styles.editBtn} testID="profile-edit" />
           </>
         )}
+      </View>
+      <View style={[styles.row, { borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, padding: theme.spacing.m, marginBottom: theme.spacing.l, justifyContent: "space-between", alignItems: "center" }]}>
+        <Text style={{ color: theme.colors.textMain, fontSize: theme.typography.body }}>Tema escuro</Text>
+        <Pressable onPress={toggleTheme} accessibilityLabel="Alternar tema" style={{ padding: 8 }}>
+          <Ionicons name={isDark ? "sunny-outline" : "moon-outline"} size={22} color={theme.colors.textMuted} />
+        </Pressable>
       </View>
       {feedback ? <Text style={{ marginBottom: theme.spacing.m, color: theme.colors.primary, fontSize: theme.typography.small }}>{feedback}</Text> : null}
       <AppButton label="Sair da conta" variant="outline" onPress={onLogout} testID="logout-button" />

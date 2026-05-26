@@ -157,11 +157,16 @@ function AppContent() {
   };
 
   // ─── Tratamento global de erros ───────────────────────────────────────────
+  const showFeedback = (msg: string) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(""), 3000);
+  };
+
   const handleError = (error: unknown) => {
     if (error instanceof ApiError || error instanceof Error) {
-      setFeedback(error.message);
+      showFeedback(error.message);
     } else {
-      setFeedback("Não foi possível concluir a ação. Tente novamente.");
+      showFeedback("Não foi possível concluir a ação. Tente novamente.");
     }
   };
 
@@ -189,7 +194,7 @@ function AppContent() {
       };
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ token: response.access_token, user: sessionUser }));
       await loadInitialData(response.user);
-      setFeedback(`Bem-vindo, ${response.user.username}!`);
+      showFeedback(`Bem-vindo, ${response.user.username}!`);
     } catch (error) {
       handleError(error);
     } finally {
@@ -235,7 +240,7 @@ function AppContent() {
     setFeedback("");
     try {
       await courseService.create(payload);
-      setFeedback("Curso publicado com sucesso.");
+      showFeedback("Curso publicado com sucesso.");
       setNewCourseTitle(""); setNewCourseCategory("Desenvolvimento");
       setNewCourseDescription(""); setNewCoursePedagogy("");
       setNewCourseLessons("8"); setNewCourseHours("4");
@@ -255,7 +260,7 @@ function AppContent() {
     setFeedback("");
     try {
       await courseService.remove(courseId);
-      setFeedback("Curso excluído com sucesso.");
+      showFeedback("Curso excluído com sucesso.");
       await loadInitialData(user);
     } catch (error) {
       handleError(error);
@@ -301,7 +306,7 @@ function AppContent() {
       };
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ token, user: updatedUser }));
       setAuthToken(token);
-      setFeedback("Perfil atualizado com sucesso.");
+      showFeedback("Perfil atualizado com sucesso.");
     } catch (error) {
       handleError(error);
     } finally {
@@ -314,7 +319,7 @@ function AppContent() {
     setAuthToken(null);
     setToken(""); setUser(null); setCourses([]); setSelectedCourse(null);
     setMyEnrollments([]); setTeacherCourses([]); setAdminOverview(null);
-    setFeedback("Sessão encerrada com segurança.");
+    showFeedback("Sessão encerrada com segurança.");
     setAuthMode("login");
   };
 
@@ -402,15 +407,16 @@ function AppContent() {
         />
       ) : (
         <View style={styles.flex}>
-          <View style={[styles.header, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border, paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.m }]}>
+          <View style={[styles.header, { borderBottomWidth: 1, borderBottomColor: "#326791", paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.m, overflow: "hidden" }]}>
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#8fbc8f" }} />
+            <View style={{ position: "absolute", top: 0, left: "70%", right: 0, bottom: 0, backgroundColor: "#326791" }} />
             <View style={styles.headerRow}>
               <View style={styles.headerSide} />
               <View style={styles.headerCenter}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <Text style={[styles.appName, { color: theme.colors.textMain }]}>CursiFy</Text>
-                  <Image source={require("../assets/images/shared image.jpg")} style={{ width: 58, height: 58, borderRadius: 29 }} />
+                  <Text style={[styles.appName, { color: "#ffffff" }]}>CursiFy</Text>
+                  <Image source={require("../assets/images/logopreta.jpg")} style={{ width: 58, height: 58, borderRadius: 29, borderWidth: 2, borderColor: "#326791", backgroundColor: "#326791" }} />
                 </View>
-                <Text style={[styles.userHint, { color: theme.colors.textMuted, fontSize: theme.typography.small, marginTop: theme.spacing.s }]}>{user.username} • {user.role}</Text>
               </View>
               <View style={styles.headerSide} />
             </View>

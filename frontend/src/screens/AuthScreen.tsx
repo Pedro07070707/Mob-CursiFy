@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppButton } from "../components/AppButton";
 import { AppInput } from "../components/AppInput";
-import { defaultAvatarBase64 } from "../constants/images";
 import { useTheme } from "../contexts/ThemeContext";
 import authService from "../services/authService";
 import { UserRole } from "../types";
+
+const cursifyLogo = require("../../assets/images/logopreta.jpg");
 
 interface AuthScreenProps {
   mode: "login" | "register";
@@ -65,7 +66,7 @@ export function AuthScreen(props: AuthScreenProps) {
         password: passwordToLogin,
         role: registerRole,
         bio: registerBio.trim(),
-        profile_image_base64: defaultAvatarBase64,
+        profile_image_base64: `data:image/jpeg;base64,${Image.resolveAssetSource(cursifyLogo).uri}`,
       });
       setRegisterName(""); setRegisterEmail(""); setRegisterPassword("");
       setRegisterBio(""); setRegisterRole("student");
@@ -83,7 +84,8 @@ export function AuthScreen(props: AuthScreenProps) {
         contentContainerStyle={[styles.content, { backgroundColor: theme.colors.background, paddingHorizontal: theme.spacing.l, paddingVertical: theme.spacing.l }]}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={[styles.headerBlock, { marginBottom: theme.spacing.l, gap: theme.spacing.s }]}>
+        <View style={[styles.headerBlock, { marginBottom: theme.spacing.l, alignItems: "center", gap: theme.spacing.s }]}>
+          <Image source={cursifyLogo} style={{ width: 80, height: 80, borderRadius: 40, marginBottom: theme.spacing.s, borderWidth: 2, borderColor: "#326791" }} />
           <Text style={{ fontSize: theme.typography.h1, fontWeight: "800", color: theme.colors.textMain }}>CursiFy Mobile</Text>
           <Text style={{ fontSize: theme.typography.body, color: theme.colors.textMuted, lineHeight: 24 }}>Aprenda, ensine e administre em um só app.</Text>
         </View>

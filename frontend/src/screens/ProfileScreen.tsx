@@ -3,7 +3,6 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-nati
 import { Ionicons } from "@expo/vector-icons";
 import { AppButton } from "../components/AppButton";
 import { AppInput } from "../components/AppInput";
-import { defaultAvatarBase64 } from "../constants/images";
 import { useTheme } from "../contexts/ThemeContext";
 import { UpdateProfilePayload, User } from "../types";
 
@@ -21,7 +20,9 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
   const [username, setUsername] = useState(user.username);
   const [bio, setBio] = useState(user.bio);
 
-  const avatarUri = user.profile_image_base64 || defaultAvatarBase64;
+  const avatarSource = user.profile_image_base64
+    ? { uri: user.profile_image_base64 }
+    : require("../../assets/images/cursify.jpg");
 
   const handleSave = async () => {
     await onUpdateProfile({ username: username.trim(), bio: bio.trim(), profile_image_base64: user.profile_image_base64 });
@@ -32,11 +33,11 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
     <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]} contentContainerStyle={{ paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.xxl }}>
       <Text style={{ fontSize: theme.typography.h2, fontWeight: "700", color: theme.colors.textMain, marginBottom: theme.spacing.l }}>Seu perfil</Text>
       <View style={{ borderRadius: theme.radius.lg, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, padding: theme.spacing.l, alignItems: "center", marginBottom: theme.spacing.l }}>
-        <Image source={{ uri: avatarUri }} style={[styles.avatar, { backgroundColor: theme.colors.surfaceHighlight, marginBottom: theme.spacing.m }]} />
+        <Image source={avatarSource} style={[styles.avatar, { backgroundColor: theme.colors.surfaceHighlight, marginBottom: theme.spacing.m }]} />
         {editing ? (
           <>
             <AppInput label="Username" value={username} onChangeText={setUsername} testID="profile-username" />
-            <AppInput label="Bio" value={bio} onChangeText={setBio} testID="profile-bio" />
+            <AppInput label="Biografia" value={bio} onChangeText={setBio} testID="profile-bio" />
             <View style={[styles.row, { gap: theme.spacing.s }]}>
               <AppButton label="Salvar" onPress={handleSave} loading={loading} style={styles.half} testID="profile-save" />
               <AppButton label="Cancelar" variant="outline" onPress={() => setEditing(false)} style={styles.half} testID="profile-cancel" />
@@ -45,6 +46,7 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
         ) : (
           <>
             <Text style={{ fontSize: 22, color: theme.colors.textMain, fontWeight: "700" }}>{user.username}</Text>
+            <Text style={{ marginTop: 2, color: theme.colors.textMuted, fontSize: theme.typography.small }}>@{user.username}</Text>
             <Text style={{ marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.small }}>{user.email}</Text>
             <Text style={{ marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.small }}>Perfil: {user.role}</Text>
             <Text style={{ marginTop: theme.spacing.m, color: theme.colors.textMain, fontSize: theme.typography.body, width: "100%" }}>{user.bio || "Sem bio informada."}</Text>

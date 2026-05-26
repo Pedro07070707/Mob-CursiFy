@@ -2,5 +2,13 @@
   "name": "mobile-cursify",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["frontend"]
+  "scripts": {
+    "start": "npm --prefix frontend start"
+  },
+  "workspaces": [
+    "frontend"
+  ],
+  "dependencies": {
+    "expo-linear-gradient": "^56.0.4"
+  }
 }

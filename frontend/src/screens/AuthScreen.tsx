@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Image, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { AppButton } from "../components/AppButton";
 import { AppInput } from "../components/AppInput";
 import { useTheme } from "../contexts/ThemeContext";
@@ -66,7 +66,7 @@ export function AuthScreen(props: AuthScreenProps) {
         password: passwordToLogin,
         role: registerRole,
         bio: registerBio.trim(),
-        profile_image_base64: `data:image/jpeg;base64,${Image.resolveAssetSource(cursifyLogo).uri}`,
+        profile_image_base64: "",
       });
       setRegisterName(""); setRegisterEmail(""); setRegisterPassword("");
       setRegisterBio(""); setRegisterRole("student");

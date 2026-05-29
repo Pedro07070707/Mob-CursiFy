@@ -24,6 +24,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { BottomTabBar } from "../src/components/BottomTabBar";
 import { pickCourseImage } from "../src/constants/images";
 import { ThemeProvider, useTheme } from "../src/contexts/ThemeContext";
@@ -407,20 +408,23 @@ function AppContent() {
         />
       ) : (
         <View style={styles.flex}>
-          <View style={[styles.header, { borderBottomWidth: 1, borderBottomColor: "#326791", paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.m, overflow: "hidden" }]}>
-            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#8fbc8f" }} />
-            <View style={{ position: "absolute", top: 0, left: "70%", right: 0, bottom: 0, backgroundColor: "#326791" }} />
+          <LinearGradient
+            colors={["#0EA5E9", "#10B981", "#22C55E"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={[styles.header, { borderBottomWidth: 1, borderBottomColor: "#0EA5E9", paddingHorizontal: theme.spacing.l, paddingTop: theme.spacing.l, paddingBottom: theme.spacing.m }]}
+          >
             <View style={styles.headerRow}>
               <View style={styles.headerSide} />
               <View style={styles.headerCenter}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8 }}>
                   <Text style={[styles.appName, { color: "#ffffff" }]}>CursiFy</Text>
-                  <Image source={require("../assets/images/logopreta.jpg")} style={{ width: 58, height: 58, borderRadius: 29, borderWidth: 2, borderColor: "#326791", backgroundColor: "#326791" }} />
+                  <Image source={require("../assets/images/logopreta.jpg")} style={{ width: 58, height: 58, borderRadius: 29, borderWidth: 2, borderColor: "#0EA5E9", backgroundColor: "#0EA5E9" }} />
                 </View>
               </View>
               <View style={styles.headerSide} />
             </View>
-          </View>
+          </LinearGradient>
 
           {screenLoading ? (
             <View style={styles.loaderWrap}>

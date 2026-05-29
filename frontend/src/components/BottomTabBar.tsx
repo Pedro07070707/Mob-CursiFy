@@ -39,7 +39,7 @@ export function BottomTabBar({ tabs, activeTab, onChange }: BottomTabBarProps) {
             onPress={() => onChange(tab.key)}
             style={({ pressed }) => [
               styles.item,
-              active && { backgroundColor: theme.colors.activeTabBg },
+              active && { backgroundColor: "transparent" },
               pressed && styles.pressed,
             ]}
           >

@@ -35,6 +35,8 @@ import { CourseDetailsScreen } from "../src/screens/CourseDetailsScreen";
 import { MyCoursesScreen } from "../src/screens/MyCoursesScreen";
 import { ProfileScreen } from "../src/screens/ProfileScreen";
 import { TeacherScreen } from "../src/screens/TeacherScreen";
+import TeacherChatScreen from "../src/screens/TeacherChatScreen";
+import StudentTeacherChatScreen from "../src/screens/StudentTeacherChatScreen";
 import { ApiError, setAuthToken } from "../src/services/api";
 import adminService from "../src/services/adminService";
 import authService from "../src/services/authService";
@@ -120,7 +122,7 @@ function AppContent() {
   // ─── Abas dinâmicas por role ───────────────────────────────────────────────
   const tabs = useMemo(() => {
     if (!user) return [];
-    const base: { key: AppTab; label: string; icon: "home-outline" | "book-outline" | "school-outline" | "shield-checkmark-outline" | "person-outline" }[] = [
+    const base: { key: AppTab; label: string; icon: "home-outline" | "book-outline" | "school-outline" | "shield-checkmark-outline" | "person-outline" | "chatbubbles-outline" }[] = [
       { key: "catalog", label: "Catálogo", icon: "home-outline" },
       { key: "my-courses", label: "Cursos", icon: "book-outline" },
     ];
@@ -128,6 +130,7 @@ function AppContent() {
       base.push({ key: "teacher", label: "Professor", icon: "school-outline" });
     if (user.role === "admin")
       base.push({ key: "admin", label: "Admin", icon: "shield-checkmark-outline" });
+    base.push({ key: "chat", label: "Chat", icon: "chatbubbles-outline" });
     base.push({ key: "profile", label: "Perfil", icon: "person-outline" });
     return base;
   }, [user]);
@@ -373,6 +376,11 @@ function AppContent() {
 
     if (activeTab === "admin")
       return <AdminScreen isAdmin={user.role === "admin"} data={adminOverview} />;
+
+    if (activeTab === "chat")
+      return user.role === "teacher" || user.role === "admin"
+        ? <TeacherChatScreen userName={user.username} />
+        : <StudentTeacherChatScreen userName={user.username} />;
 
     return (
       <ProfileScreen

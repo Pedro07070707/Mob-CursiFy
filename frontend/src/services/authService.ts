@@ -68,8 +68,8 @@ function requireAuthenticatedUserId() {
 }
 
 const authService = {
-  create: (payload: RegisterPayload) =>
-    api
+  create: async (payload: RegisterPayload) => {
+    const user = await api
       .post<BackendUser>("/usuario", {
         nome: payload.username,
         email: normalizeEmail(payload.email),
@@ -78,7 +78,13 @@ const authService = {
         dataCadastro: new Date().toISOString(),
         statusUsuario: "Ativo",
       })
-      .then((response) => mapUser(response.data)),
+      .then((response) => mapUser(response.data));
+    if (payload.bio) {
+      const { default: AsyncStorage } = await import("@react-native-async-storage/async-storage");
+      await AsyncStorage.setItem(`cursify_bio_${user.user_id}`, payload.bio);
+    }
+    return user;
+  },
 
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
     const response = await api.get<BackendUser[]>("/usuario");
@@ -100,6 +106,9 @@ const authService = {
     }
 
     const normalizedUser = mapUser(user);
+    const { default: AsyncStorage } = await import("@react-native-async-storage/async-storage");
+    const savedBio = await AsyncStorage.getItem(`cursify_bio_${normalizedUser.user_id}`);
+    if (savedBio) normalizedUser.bio = savedBio;
 
     return {
       access_token: normalizedUser.user_id,
@@ -118,11 +127,14 @@ const authService = {
       nome: payload.username,
     });
 
-    return {
+    const result = {
       ...mapUser(updatedResponse.data),
       bio: payload.bio,
       profile_image_base64: payload.profile_image_base64,
     };
+    const { default: AsyncStorage } = await import("@react-native-async-storage/async-storage");
+    await AsyncStorage.setItem(`cursify_bio_${result.user_id}`, payload.bio);
+    return result;
   },
 
   getAll: () => api.get<BackendUser[]>("/usuario").then((response) => response.data.map(mapUser)),

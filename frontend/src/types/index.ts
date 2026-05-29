@@ -81,4 +81,12 @@ export interface AdminOverview {
   enrollments_total: number;
 }
 
-export type AppTab = "catalog" | "my-courses" | "teacher" | "admin" | "profile";
+export type AppTab = "catalog" | "my-courses" | "teacher" | "admin" | "profile" | "chat";
+
+export interface ChatMessage {
+  message_id: string;
+  sender_id: string;
+  sender_name: string;
+  content: string;
+  created_at: string;
+}

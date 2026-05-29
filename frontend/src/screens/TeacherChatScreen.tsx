@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator, Modal, Pressable } from "react-native";
 import { useTheme } from "../contexts/ThemeContext";
 import { chatService } from "../services/chatService";
 import { ChatMessage as ChatMessageType, User } from "../types";
@@ -13,7 +13,8 @@ interface Props {
 type Tab = "students" | "teachers";
 
 interface UserWithPreview extends User {
-  lastMsg?: ChatMessage | null;
+  lastMsg?: ChatMessageType | null;
+  unread?: boolean;
 }
 
 export default function TeacherChatScreen({ userName }: Props) {
@@ -25,11 +26,15 @@ export default function TeacherChatScreen({ userName }: Props) {
   const [view, setView] = useState<"list" | "chat">("list");
   const [students, setStudents] = useState<UserWithPreview[]>([]);
   const [teachers, setTeachers] = useState<UserWithPreview[]>([]);
+  const [allStudents, setAllStudents] = useState<UserWithPreview[]>([]);
+  const [allTeachers, setAllTeachers] = useState<UserWithPreview[]>([]);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserWithPreview | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<"clear" | "delete" | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -38,29 +43,46 @@ export default function TeacherChatScreen({ userName }: Props) {
       const studs = users.filter((u) => u.role === "student");
       const tchs = users.filter((u) => u.role === "teacher" && u.user_id !== userId);
       const withPreview = async (list: User[]): Promise<UserWithPreview[]> => {
-        const previews = await Promise.all(list.map((u) => chatService.getLastMessage(userId, u.user_id)));
+        const [previews, unreads] = await Promise.all([
+          Promise.all(list.map((u) => chatService.getLastMessage(userId, u.user_id))),
+          Promise.all(list.map((u) => chatService.hasUnread(userId, u.user_id))),
+        ]);
+        const hidden = await chatService.getHiddenContacts(userId);
         return list
-          .map((u, i) => ({ ...u, lastMsg: previews[i] }))
+          .filter((u) => !hidden.includes(u.user_id))
+          .map((u, i) => ({ ...u, lastMsg: previews[i], unread: unreads[i] }))
           .sort((a, b) => (b.lastMsg?.created_at ?? "") > (a.lastMsg?.created_at ?? "") ? 1 : -1);
+      };
+      const withPreviewAll = async (list: User[]): Promise<UserWithPreview[]> => {
+        const previews = await Promise.all(list.map((u) => chatService.getLastMessage(userId, u.user_id)));
+        const unreads = await Promise.all(list.map((u) => chatService.hasUnread(userId, u.user_id)));
+        return list.map((u, i) => ({ ...u, lastMsg: previews[i], unread: unreads[i] }));
       };
       setStudents(await withPreview(studs));
       setTeachers(await withPreview(tchs));
+      setAllStudents(await withPreviewAll(studs));
+      setAllTeachers(await withPreviewAll(tchs));
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  const openChat = async (user: User) => {
+  const openChat = async (user: UserWithPreview) => {
     setSelectedUser(user);
     setView("chat");
+    if (tab !== "teachers") await chatService.markAsRead(userId, user.user_id);
     const msgs = tab === "teachers"
       ? await chatService.getTeacherMessages()
       : await chatService.getPrivateMessages(userId, user.user_id);
     setMessages(msgs);
+    const update = (prev: UserWithPreview[]) => prev.map((u) => u.user_id === user.user_id ? { ...u, unread: false } : u);
+    setStudents(update);
+    setTeachers(update);
     intervalRef.current = setInterval(async () => {
       const updated = tab === "teachers"
         ? await chatService.getTeacherMessages()
         : await chatService.getPrivateMessages(userId, user.user_id);
       setMessages(updated);
+      if (tab !== "teachers") await chatService.markAsRead(userId, user.user_id);
     }, 3000);
   };
 
@@ -69,6 +91,24 @@ export default function TeacherChatScreen({ userName }: Props) {
     setView("list");
     setSelectedUser(null);
     setMessages([]);
+  };
+
+  const handleConfirm = async () => {
+    if (!selectedUser) return;
+    if (confirmAction === "clear") {
+      await chatService.clearMessages(userId, selectedUser.user_id);
+      setMessages([]);
+      setStudents((prev) => prev.map((u) => u.user_id === selectedUser.user_id ? { ...u, lastMsg: null } : u));
+      setTeachers((prev) => prev.map((u) => u.user_id === selectedUser.user_id ? { ...u, lastMsg: null } : u));
+    } else if (confirmAction === "delete") {
+      await chatService.hideContact(userId, selectedUser.user_id);
+      setStudents((prev) => prev.filter((u) => u.user_id !== selectedUser.user_id));
+      setTeachers((prev) => prev.filter((u) => u.user_id !== selectedUser.user_id));
+      setConfirmAction(null);
+      closeChat();
+      return;
+    }
+    setConfirmAction(null);
   };
 
   const send = async () => {
@@ -87,9 +127,10 @@ export default function TeacherChatScreen({ userName }: Props) {
     flatListRef.current?.scrollToEnd({ animated: true });
   };
 
-  const list = (tab === "students" ? students : teachers).filter((u) =>
-    u.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const baseList = search
+    ? (tab === "students" ? allStudents : allTeachers)
+    : (tab === "students" ? students : teachers);
+  const list = baseList.filter((u) => u.username.toLowerCase().includes(search.toLowerCase()));
 
   if (view === "chat") {
     return (
@@ -98,8 +139,15 @@ export default function TeacherChatScreen({ userName }: Props) {
           <TouchableOpacity onPress={closeChat}>
             <Text style={styles.backText}>← Voltar</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{selectedUser?.username}</Text>
-          <Text style={styles.headerSub}>{tab === "students" ? "Aluno" : "Professor"}</Text>
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={styles.headerTitle}>{selectedUser?.username}</Text>
+              <Text style={styles.headerSub}>{tab === "students" ? "Aluno" : "Professor"}</Text>
+            </View>
+            <TouchableOpacity onPress={() => setMenuVisible(true)} style={styles.menuBtn}>
+              <Text style={styles.menuBtnText}>⋮</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <FlatList
@@ -139,6 +187,47 @@ export default function TeacherChatScreen({ userName }: Props) {
             <Text style={styles.sendBtnText}>Enviar</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Menu modal */}
+        <Modal transparent visible={menuVisible} animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+          <Pressable style={styles.overlay} onPress={() => setMenuVisible(false)}>
+            <View style={[styles.menuBox, { backgroundColor: c.surface }]}>
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setConfirmAction("clear"); }}>
+                <Text style={[styles.menuItemText, { color: c.textMain }]}>Limpar conversa</Text>
+              </TouchableOpacity>
+              <View style={[styles.menuDivider, { backgroundColor: c.border }]} />
+              <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setConfirmAction("delete"); }}>
+                <Text style={[styles.menuItemText, { color: "#EF4444" }]}>Apagar contato</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Modal>
+
+        {/* Confirm modal */}
+        <Modal transparent visible={confirmAction !== null} animationType="fade" onRequestClose={() => setConfirmAction(null)}>
+          <Pressable style={styles.overlay} onPress={() => setConfirmAction(null)}>
+            <View style={[styles.confirmBox, { backgroundColor: c.surface }]}>
+              <Text style={[styles.confirmTitle, { color: c.textMain }]}>
+                {confirmAction === "clear" ? "Limpar conversa" : "Apagar contato"}
+              </Text>
+              <Text style={[styles.confirmMsg, { color: c.textMuted }]}>
+                {confirmAction === "clear"
+                  ? "Apagar todas as mensagens desta conversa?"
+                  : `Remover ${selectedUser?.username} do seu chat?`}
+              </Text>
+              <View style={styles.confirmBtns}>
+                <TouchableOpacity style={[styles.confirmBtn, { borderColor: c.border }]} onPress={() => setConfirmAction(null)}>
+                  <Text style={{ color: c.textMuted }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: "#EF4444", borderColor: "#EF4444" }]} onPress={handleConfirm}>
+                  <Text style={{ color: "#fff", fontWeight: "600" }}>
+                    {confirmAction === "clear" ? "Limpar" : "Apagar"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Pressable>
+        </Modal>
       </KeyboardAvoidingView>
     );
   }
@@ -183,8 +272,11 @@ export default function TeacherChatScreen({ userName }: Props) {
               style={[styles.userItem, { backgroundColor: c.surface, borderBottomColor: c.border }]}
               onPress={() => openChat(item)}
             >
-              <View style={[styles.avatar, { backgroundColor: c.primary }]}>
-                <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
+              <View>
+                <View style={[styles.avatar, { backgroundColor: c.primary }]}>
+                  <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
+                </View>
+                {item.unread && <View style={styles.unreadDot} />}
               </View>
               <View style={styles.userInfo}>
                 <View style={styles.userRow}>
@@ -212,6 +304,7 @@ export default function TeacherChatScreen({ userName }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { padding: 16, paddingTop: 20 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
   headerTitle: { fontSize: 18, fontWeight: "bold", color: "#fff" },
   headerSub: { fontSize: 12, color: "#ffffffaa", marginTop: 2 },
   backText: { color: "#ffffffcc", fontSize: 14, marginBottom: 4 },
@@ -227,7 +320,6 @@ const styles = StyleSheet.create({
   userInfo: { flex: 1 },
   userRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   userName: { fontSize: 16, fontWeight: "600" },
-  userRole: { fontSize: 13, marginTop: 2 },
   previewText: { fontSize: 13, marginTop: 2 },
   previewTime: { fontSize: 12 },
   row: { marginVertical: 4, alignItems: "flex-start" },
@@ -240,4 +332,17 @@ const styles = StyleSheet.create({
   input: { flex: 1, borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8, maxHeight: 100, marginRight: 8 },
   sendBtn: { borderRadius: 20, paddingHorizontal: 18, paddingVertical: 10 },
   sendBtnText: { color: "#fff", fontWeight: "600" },
+  unreadDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#EF4444", position: "absolute", bottom: 0, right: 0, borderWidth: 1.5, borderColor: "#fff" },
+  menuBtn: { padding: 8 },
+  menuBtnText: { color: "#fff", fontSize: 26, fontWeight: "bold" },
+  overlay: { flex: 1, backgroundColor: "#00000055", justifyContent: "center", alignItems: "center" },
+  menuBox: { borderRadius: 12, width: 220, overflow: "hidden", elevation: 5 },
+  menuItem: { paddingVertical: 16, paddingHorizontal: 20 },
+  menuItemText: { fontSize: 16 },
+  menuDivider: { height: 1 },
+  confirmBox: { borderRadius: 12, width: 280, padding: 20, elevation: 5 },
+  confirmTitle: { fontSize: 17, fontWeight: "700", marginBottom: 8 },
+  confirmMsg: { fontSize: 14, marginBottom: 20 },
+  confirmBtns: { flexDirection: "row", gap: 10 },
+  confirmBtn: { flex: 1, borderWidth: 1, borderRadius: 8, paddingVertical: 10, alignItems: "center" },
 });

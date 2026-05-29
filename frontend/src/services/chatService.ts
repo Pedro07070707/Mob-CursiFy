@@ -49,4 +49,38 @@ export const chatService = {
     const msgs: ChatMessage[] = JSON.parse(raw);
     return msgs.length > 0 ? msgs[msgs.length - 1] : null;
   },
+
+  markAsRead: async (userA: string, userB: string): Promise<void> => {
+    await AsyncStorage.setItem(`cursify_read_${privateKey(userA, userB)}`, new Date().toISOString());
+  },
+
+  hasUnread: async (userId: string, otherId: string): Promise<boolean> => {
+    const raw = await AsyncStorage.getItem(privateKey(userId, otherId));
+    if (!raw) return false;
+    const msgs: ChatMessage[] = JSON.parse(raw);
+    const lastRead = await AsyncStorage.getItem(`cursify_read_${privateKey(userId, otherId)}`);
+    const unread = msgs.filter((m) => m.sender_id !== userId && (!lastRead || m.created_at > lastRead));
+    return unread.length > 0;
+  },
+
+  clearMessages: async (userA: string, userB: string): Promise<void> => {
+    const key = privateKey(userA, userB);
+    await AsyncStorage.removeItem(key);
+    await AsyncStorage.removeItem(`cursify_read_${key}`);
+  },
+
+  hideContact: async (userId: string, otherId: string): Promise<void> => {
+    const key = privateKey(userId, otherId);
+    await AsyncStorage.removeItem(key);
+    await AsyncStorage.removeItem(`cursify_read_${key}`);
+    const hidden = await AsyncStorage.getItem(`cursify_hidden_${userId}`);
+    const list: string[] = hidden ? JSON.parse(hidden) : [];
+    if (!list.includes(otherId)) list.push(otherId);
+    await AsyncStorage.setItem(`cursify_hidden_${userId}`, JSON.stringify(list));
+  },
+
+  getHiddenContacts: async (userId: string): Promise<string[]> => {
+    const raw = await AsyncStorage.getItem(`cursify_hidden_${userId}`);
+    return raw ? JSON.parse(raw) : [];
+  },
 };

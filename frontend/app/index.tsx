@@ -40,6 +40,7 @@ import StudentTeacherChatScreen from "../src/screens/StudentTeacherChatScreen";
 import { ApiError, setAuthToken } from "../src/services/api";
 import adminService from "../src/services/adminService";
 import authService from "../src/services/authService";
+import { chatService } from "../src/services/chatService";
 import courseService from "../src/services/courseService";
 import enrollmentService from "../src/services/enrollmentService";
 import {
@@ -82,6 +83,7 @@ function AppContent() {
   const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
 
   const [activeTab, setActiveTab] = useState<AppTab>("catalog");
+  const [chatUnread, setChatUnread] = useState(0);
 
   const [newCourseTitle, setNewCourseTitle] = useState("");
   const [newCourseCategory, setNewCourseCategory] = useState("Desenvolvimento");
@@ -119,6 +121,24 @@ function AppContent() {
     );
   }, [activeTab, selectedCourse, fadeAnim]);
 
+  // ─── Polling de não lidas no chat ─────────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      const users = await authService.getAll();
+      const others = users.filter((u) => u.user_id !== user.user_id);
+      const counts = await Promise.all(others.map((u) => chatService.getUnreadCount(user.user_id, u.user_id)));
+      setChatUnread(counts.reduce((a, b) => a + b, 0));
+    };
+    check();
+    const id = setInterval(check, 5000);
+    return () => clearInterval(id);
+  }, [user]);
+
+  useEffect(() => {
+    if (activeTab === "chat") setChatUnread(0);
+  }, [activeTab]);
+
   // ─── Abas dinâmicas por role ───────────────────────────────────────────────
   const tabs = useMemo(() => {
     if (!user) return [];
@@ -130,7 +150,7 @@ function AppContent() {
       base.push({ key: "teacher", label: "Professor", icon: "school-outline" });
     if (user.role === "admin")
       base.push({ key: "admin", label: "Admin", icon: "shield-checkmark-outline" });
-    base.push({ key: "chat", label: "Chat", icon: "chatbubbles-outline" });
+    base.push({ key: "chat", label: "Chat", icon: "chatbubbles-outline", badge: chatUnread || undefined });
     base.push({ key: "profile", label: "Perfil", icon: "person-outline" });
     return base;
   }, [user]);

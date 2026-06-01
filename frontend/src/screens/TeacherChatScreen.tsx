@@ -37,6 +37,7 @@ export default function TeacherChatScreen({ userName }: Props) {
   const [confirmAction, setConfirmAction] = useState<"clear" | "delete" | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const listIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     authService.getAll().then(async (users) => {
@@ -63,7 +64,14 @@ export default function TeacherChatScreen({ userName }: Props) {
       setAllStudents(await withPreviewAll(studs));
       setAllTeachers(await withPreviewAll(tchs));
       setLoading(false);
+      listIntervalRef.current = setInterval(async () => {
+        const refreshUnreads = async (list: UserWithPreview[]): Promise<UserWithPreview[]> =>
+          Promise.all(list.map(async (u) => ({ ...u, unread: await chatService.hasUnread(userId, u.user_id) })));
+        setStudents((prev) => { refreshUnreads(prev).then(setStudents); return prev; });
+        setTeachers((prev) => { refreshUnreads(prev).then(setTeachers); return prev; });
+      }, 4000);
     }).catch(() => setLoading(false));
+    return () => { if (listIntervalRef.current) clearInterval(listIntervalRef.current); };
   }, []);
 
   const openChat = async (user: UserWithPreview) => {
@@ -161,8 +169,13 @@ export default function TeacherChatScreen({ userName }: Props) {
             const own = item.sender_id === userId;
             return (
               <View style={[styles.row, own && styles.rowOwn]}>
-                <View style={[styles.bubble, { backgroundColor: own ? c.primary : c.surface }]}>
-                  {!own && tab === "teachers" && <Text style={[styles.sender, { color: c.primary }]}>{item.sender_name}</Text>}
+                {!own && (
+                  <View style={[styles.msgAvatar, { backgroundColor: c.primary }]}>
+                    <Text style={styles.msgAvatarText}>{item.sender_name.charAt(0).toUpperCase()}</Text>
+                  </View>
+                )}
+                <View style={[styles.bubble, { backgroundColor: own ? c.primary : c.surface, borderBottomRightRadius: own ? 4 : 16, borderBottomLeftRadius: own ? 16 : 4 }]}>
+                  {!own && <Text style={[styles.sender, { color: c.primary }]}>{item.sender_name}</Text>}
                   <Text style={[styles.msgText, { color: own ? "#fff" : c.textMain }]}>{item.content}</Text>
                   <Text style={[styles.time, { color: own ? "#ffffffaa" : c.textMuted }]}>
                     {new Date(item.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
@@ -272,7 +285,7 @@ export default function TeacherChatScreen({ userName }: Props) {
               style={[styles.userItem, { backgroundColor: c.surface, borderBottomColor: c.border }]}
               onPress={() => openChat(item)}
             >
-              <View>
+              <View style={styles.avatarWrap}>
                 <View style={[styles.avatar, { backgroundColor: c.primary }]}>
                   <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
                 </View>
@@ -315,6 +328,7 @@ const styles = StyleSheet.create({
   searchInput: { fontSize: 15 },
   empty: { textAlign: "center", marginTop: 40, fontSize: 14 },
   userItem: { flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, gap: 12 },
+  avatarWrap: { width: 44, height: 44 },
   avatar: { width: 44, height: 44, borderRadius: 22, justifyContent: "center", alignItems: "center" },
   avatarText: { color: "#fff", fontWeight: "bold", fontSize: 18 },
   userInfo: { flex: 1 },
@@ -322,8 +336,10 @@ const styles = StyleSheet.create({
   userName: { fontSize: 16, fontWeight: "600" },
   previewText: { fontSize: 13, marginTop: 2 },
   previewTime: { fontSize: 12 },
-  row: { marginVertical: 4, alignItems: "flex-start" },
-  rowOwn: { alignItems: "flex-end" },
+  row: { marginVertical: 4, alignItems: "flex-start", flexDirection: "row", gap: 8, paddingHorizontal: 12 },
+  rowOwn: { alignItems: "flex-end", flexDirection: "row-reverse" },
+  msgAvatar: { width: 30, height: 30, borderRadius: 15, justifyContent: "center", alignItems: "center", marginTop: 2, flexShrink: 0 },
+  msgAvatarText: { color: "#fff", fontWeight: "bold", fontSize: 13 },
   bubble: { maxWidth: "75%", padding: 12, borderRadius: 16 },
   sender: { fontSize: 12, fontWeight: "600", marginBottom: 4 },
   msgText: { fontSize: 15 },

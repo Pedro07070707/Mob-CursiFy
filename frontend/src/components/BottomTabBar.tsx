@@ -7,6 +7,7 @@ interface TabItem {
   key: AppTab;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
+  badge?: number;
 }
 
 interface BottomTabBarProps {
@@ -43,7 +44,14 @@ export function BottomTabBar({ tabs, activeTab, onChange }: BottomTabBarProps) {
               pressed && styles.pressed,
             ]}
           >
-            <Ionicons name={tab.icon} size={20} color={active ? theme.colors.primary : theme.colors.textMuted} />
+            <View>
+              <Ionicons name={tab.icon} size={20} color={active ? theme.colors.primary : theme.colors.textMuted} />
+              {!!tab.badge && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{tab.badge > 99 ? "99+" : tab.badge}</Text>
+                </View>
+              )}
+            </View>
             <Text style={[styles.label, { color: active ? theme.colors.primary : theme.colors.textMuted }]}>
               {tab.label}
             </Text>
@@ -74,4 +82,6 @@ const styles = StyleSheet.create({
   },
   pressed: { transform: [{ scale: 0.96 }] },
   label: { fontSize: 11, fontWeight: "600" },
+  badge: { position: "absolute", top: -4, right: -6, minWidth: 16, height: 16, borderRadius: 8, backgroundColor: "#EF4444", alignItems: "center", justifyContent: "center", paddingHorizontal: 3 },
+  badgeText: { color: "#fff", fontSize: 9, fontWeight: "700" },
 });

@@ -83,4 +83,12 @@ export const chatService = {
     const raw = await AsyncStorage.getItem(`cursify_hidden_${userId}`);
     return raw ? JSON.parse(raw) : [];
   },
+
+  getUnreadCount: async (userId: string, otherId: string): Promise<number> => {
+    const raw = await AsyncStorage.getItem(privateKey(userId, otherId));
+    if (!raw) return 0;
+    const msgs: ChatMessage[] = JSON.parse(raw);
+    const lastRead = await AsyncStorage.getItem(`cursify_read_${privateKey(userId, otherId)}`);
+    return msgs.filter((m) => m.sender_id !== userId && (!lastRead || m.created_at > lastRead)).length;
+  },
 };

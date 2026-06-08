@@ -47,6 +47,8 @@ export interface Course {
   thumbnail_base64: string;
   enrolled_count: number;
   created_at: string;
+  video_links: string[];
+  site_links: string[];
 }
 
 export interface CreateCoursePayload {
@@ -58,6 +60,8 @@ export interface CreateCoursePayload {
   lessons_count: number;
   estimated_hours: number;
   thumbnail_base64: string;
+  video_links: string[];
+  site_links: string[];
 }
 
 export interface Enrollment {

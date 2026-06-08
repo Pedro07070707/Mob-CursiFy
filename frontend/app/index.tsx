@@ -92,6 +92,8 @@ function AppContent() {
   const [newCourseLessons, setNewCourseLessons] = useState("8");
   const [newCourseHours, setNewCourseHours] = useState("4");
   const [newCourseLevel, setNewCourseLevel] = useState<CourseLevel>("beginner");
+  const [newCourseVideoLinks, setNewCourseVideoLinks] = useState("");
+  const [newCourseSiteLinks, setNewCourseSiteLinks] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [screenLoading, setScreenLoading] = useState(true);
@@ -239,6 +241,8 @@ function AppContent() {
   };
 
   const handleOpenCourseById = async (courseId: string) => {
+    const local = [...courses, ...teacherCourses].find((c) => c.course_id === courseId);
+    if (local) { setSelectedCourse(local); return; }
     try {
       setSelectedCourse(await courseService.getById(courseId));
     } catch (error) {
@@ -246,7 +250,7 @@ function AppContent() {
     }
   };
 
-  const handleOpenCourse = (course: Course) => handleOpenCourseById(course.course_id);
+  const handleOpenCourse = (course: Course) => setSelectedCourse(course);
 
   const handleCreateCourse = async () => {
     if (!user) return;
@@ -259,6 +263,8 @@ function AppContent() {
       estimated_hours: Number(newCourseHours),
       level: newCourseLevel,
       thumbnail_base64: pickCourseImage(newCourseCategory, newCourseTitle),
+      video_links: newCourseVideoLinks.split("\n").map((l) => l.trim()).filter(Boolean),
+      site_links: newCourseSiteLinks.split("\n").map((l) => l.trim()).filter(Boolean),
     };
     setBusy(true);
     setFeedback("");
@@ -269,6 +275,7 @@ function AppContent() {
       setNewCourseDescription(""); setNewCoursePedagogy("");
       setNewCourseLessons("8"); setNewCourseHours("4");
       setNewCourseLevel("beginner");
+      setNewCourseVideoLinks(""); setNewCourseSiteLinks("");
       await loadInitialData(user);
       setActiveTab("catalog");
     } catch (error) {
@@ -386,6 +393,8 @@ function AppContent() {
           lessonsCount={newCourseLessons} setLessonsCount={setNewCourseLessons}
           estimatedHours={newCourseHours} setEstimatedHours={setNewCourseHours}
           level={newCourseLevel} setLevel={setNewCourseLevel}
+          videoLinksText={newCourseVideoLinks} setVideoLinksText={setNewCourseVideoLinks}
+          siteLinksText={newCourseSiteLinks} setSiteLinksText={setNewCourseSiteLinks}
           loading={busy}
           onCreateCourse={handleCreateCourse}
           courses={teacherCourses}

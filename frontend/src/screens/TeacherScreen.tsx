@@ -14,6 +14,8 @@ interface TeacherScreenProps {
   lessonsCount: string; setLessonsCount: (v: string) => void;
   estimatedHours: string; setEstimatedHours: (v: string) => void;
   level: CourseLevel; setLevel: (v: CourseLevel) => void;
+  videoLinksText: string; setVideoLinksText: (v: string) => void;
+  siteLinksText: string; setSiteLinksText: (v: string) => void;
   loading: boolean;
   onCreateCourse: () => void;
   courses: Course[];
@@ -51,6 +53,8 @@ export function TeacherScreen(props: TeacherScreenProps) {
           <AppInput label="Categoria" value={props.category} onChangeText={props.setCategory} testID="teacher-category" />
           <AppInput label="Descrição" value={props.description} onChangeText={props.setDescription} testID="teacher-description" />
           <AppInput label="Descrição pedagógica" value={props.pedagogyDescription} onChangeText={props.setPedagogyDescription} testID="teacher-pedagogy" />
+          <AppInput label="🎬 Vídeos (um link por linha)" value={props.videoLinksText} onChangeText={props.setVideoLinksText} testID="teacher-videos" multiline />
+          <AppInput label="🌐 Sites de estudo (um link por linha)" value={props.siteLinksText} onChangeText={props.setSiteLinksText} testID="teacher-sites" multiline />
           <View style={{ gap: theme.spacing.s }}>
             <AppInput label="Aulas" keyboardType="numeric" value={props.lessonsCount} onChangeText={props.setLessonsCount} testID="teacher-lessons" />
             <AppInput label="Horas" keyboardType="numeric" value={props.estimatedHours} onChangeText={props.setEstimatedHours} testID="teacher-hours" />

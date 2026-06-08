@@ -1,4 +1,4 @@
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AppButton } from "../components/AppButton";
 import { pickCourseImage } from "../constants/images";
 import { useTheme } from "../contexts/ThemeContext";
@@ -32,6 +32,28 @@ export function CourseDetailsScreen({ course, canEnroll, loading, onBack, onEnro
           <Text style={{ color: theme.colors.textMuted, fontSize: theme.typography.body, lineHeight: 24 }}>{block.text}</Text>
         </View>
       ))}
+
+      {course.video_links?.length > 0 && (
+        <View style={{ marginTop: theme.spacing.l, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.m }}>
+          <Text style={{ fontSize: theme.typography.body, fontWeight: "700", color: theme.colors.textMain, marginBottom: theme.spacing.s }}>🎬 Vídeos de aula</Text>
+          {course.video_links.map((link, i) => (
+            <TouchableOpacity key={i} onPress={() => Linking.openURL(link)}>
+              <Text style={{ color: theme.colors.primary, fontSize: theme.typography.body, marginBottom: theme.spacing.xs, textDecorationLine: "underline" }} numberOfLines={1}>{link}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      {course.site_links?.length > 0 && (
+        <View style={{ marginTop: theme.spacing.l, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.m }}>
+          <Text style={{ fontSize: theme.typography.body, fontWeight: "700", color: theme.colors.textMain, marginBottom: theme.spacing.s }}>🌐 Sites de estudo</Text>
+          {course.site_links.map((link, i) => (
+            <TouchableOpacity key={i} onPress={() => Linking.openURL(link)}>
+              <Text style={{ color: theme.colors.primary, fontSize: theme.typography.body, marginBottom: theme.spacing.xs, textDecorationLine: "underline" }} numberOfLines={1}>{link}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       <View style={[styles.actions, { marginTop: theme.spacing.l, gap: theme.spacing.s }]}>
         <AppButton label="Voltar" variant="secondary" onPress={onBack} style={styles.half} testID="course-back" />

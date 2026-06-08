@@ -1,4 +1,5 @@
-﻿import { api } from "./api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { api } from "./api";
 import { Course, CreateCoursePayload } from "../types";
 
 interface BackendCourse {
@@ -35,32 +36,67 @@ function mapCourse(course: BackendCourse): Course {
     thumbnail_base64: "",
     enrolled_count: 0,
     created_at: course.dataCriacao ?? new Date().toISOString(),
+    video_links: [],
+    site_links: [],
   };
 }
 
+const LINKS_KEY = "cursify_course_links";
+
+async function loadLinksMap(): Promise<Record<string, { video_links: string[]; site_links: string[] }>> {
+  try {
+    const raw = await AsyncStorage.getItem(LINKS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+async function saveLinks(courseId: string, video_links: string[], site_links: string[]) {
+  const map = await loadLinksMap();
+  map[courseId] = { video_links, site_links };
+  await AsyncStorage.setItem(LINKS_KEY, JSON.stringify(map));
+}
+
 const courseService = {
-  getAll: (category?: string) =>
-    api
-      .get<BackendCourse[]>("/curso")
-      .then((response) => response.data
-        .filter((course) => isCourseActive(course.statusCurso))
-        .map(mapCourse)
-        .filter((course) => !category || course.category === category)),
+  getAll: async (category?: string) => {
+    const [response, linksMap] = await Promise.all([
+      api.get<BackendCourse[]>("/curso"),
+      loadLinksMap(),
+    ]);
+    return response.data
+      .filter((course) => isCourseActive(course.statusCurso))
+      .map((course) => ({
+        ...mapCourse(course),
+        ...(linksMap[String(course.id)] ?? { video_links: [], site_links: [] }),
+      }))
+      .filter((course) => !category || course.category === category);
+  },
 
-  getById: (courseId: string) =>
-    api.get<BackendCourse>(`/curso/${courseId}`).then((response) => mapCourse(response.data)),
+  getById: async (courseId: string) => {
+    const [response, linksMap] = await Promise.all([
+      api.get<BackendCourse>(`/curso/${courseId}`),
+      loadLinksMap(),
+    ]);
+    return {
+      ...mapCourse(response.data),
+      ...(linksMap[courseId] ?? { video_links: [], site_links: [] }),
+    };
+  },
 
-  create: (payload: CreateCoursePayload) =>
-    api
-      .post<BackendCourse>("/curso", {
-        nome: payload.title,
-        descricao: payload.description,
-        categoria: payload.category,
-        cargaHoraria: payload.estimated_hours,
-        dataCriacao: new Date().toISOString(),
-        statusCurso: "Ativo",
-      })
-      .then((response) => mapCourse(response.data)),
+  create: async (payload: CreateCoursePayload) => {
+    const response = await api.post<BackendCourse>("/curso", {
+      nome: payload.title,
+      descricao: payload.description,
+      categoria: payload.category,
+      cargaHoraria: payload.estimated_hours,
+      dataCriacao: new Date().toISOString(),
+      statusCurso: "Ativo",
+    });
+    const course = mapCourse(response.data);
+    await saveLinks(course.course_id, payload.video_links ?? [], payload.site_links ?? []);
+    return { ...course, video_links: payload.video_links ?? [], site_links: payload.site_links ?? [] };
+  },
 
   update: (_courseId: string, _payload: Partial<CreateCoursePayload>): Promise<Course> =>
     Promise.reject(new Error("Endpoint nao implementado.")),

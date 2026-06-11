@@ -26,7 +26,6 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { BottomTabBar } from "../src/components/BottomTabBar";
-import { pickCourseImage } from "../src/constants/images";
 import { ThemeProvider, useTheme } from "../src/contexts/ThemeContext";
 import { AdminScreen } from "../src/screens/AdminScreen";
 import { AuthScreen } from "../src/screens/AuthScreen";
@@ -34,7 +33,7 @@ import { CatalogScreen } from "../src/screens/CatalogScreen";
 import { CourseDetailsScreen } from "../src/screens/CourseDetailsScreen";
 import { MyCoursesScreen } from "../src/screens/MyCoursesScreen";
 import { ProfileScreen } from "../src/screens/ProfileScreen";
-import { TeacherScreen } from "../src/screens/TeacherScreen";
+import { PublishCourseScreen } from "../src/screens/PublishCourseScreen";
 import TeacherChatScreen from "../src/screens/TeacherChatScreen";
 import StudentTeacherChatScreen from "../src/screens/StudentTeacherChatScreen";
 import { ApiError, setAuthToken } from "../src/services/api";
@@ -47,7 +46,6 @@ import {
   AdminOverview,
   AppTab,
   Course,
-  CourseLevel,
   CreateCoursePayload,
   Enrollment,
   UpdateProfilePayload,
@@ -85,15 +83,6 @@ function AppContent() {
   const [activeTab, setActiveTab] = useState<AppTab>("catalog");
   const [chatUnread, setChatUnread] = useState(0);
 
-  const [newCourseTitle, setNewCourseTitle] = useState("");
-  const [newCourseCategory, setNewCourseCategory] = useState("Desenvolvimento");
-  const [newCourseDescription, setNewCourseDescription] = useState("");
-  const [newCoursePedagogy, setNewCoursePedagogy] = useState("");
-  const [newCourseLessons, setNewCourseLessons] = useState("8");
-  const [newCourseHours, setNewCourseHours] = useState("4");
-  const [newCourseLevel, setNewCourseLevel] = useState<CourseLevel>("beginner");
-  const [newCourseVideoLinks, setNewCourseVideoLinks] = useState("");
-  const [newCourseSiteLinks, setNewCourseSiteLinks] = useState("");
 
   const [busy, setBusy] = useState(false);
   const [screenLoading, setScreenLoading] = useState(true);
@@ -252,34 +241,19 @@ function AppContent() {
 
   const handleOpenCourse = (course: Course) => setSelectedCourse(course);
 
-  const handleCreateCourse = async () => {
-    if (!user) return;
-    const payload: CreateCoursePayload = {
-      title: newCourseTitle.trim(),
-      category: newCourseCategory.trim(),
-      description: newCourseDescription.trim(),
-      pedagogy_description: newCoursePedagogy.trim(),
-      lessons_count: Number(newCourseLessons),
-      estimated_hours: Number(newCourseHours),
-      level: newCourseLevel,
-      thumbnail_base64: pickCourseImage(newCourseCategory, newCourseTitle),
-      video_links: newCourseVideoLinks.split("\n").map((l) => l.trim()).filter(Boolean),
-      site_links: newCourseSiteLinks.split("\n").map((l) => l.trim()).filter(Boolean),
-    };
+  const handleCreateCourse = async (payload: CreateCoursePayload) => {
+    if (!user) return null;
     setBusy(true);
     setFeedback("");
     try {
-      await courseService.create(payload);
+      const result = await courseService.create(payload);
       showFeedback("Curso publicado com sucesso.");
-      setNewCourseTitle(""); setNewCourseCategory("Desenvolvimento");
-      setNewCourseDescription(""); setNewCoursePedagogy("");
-      setNewCourseLessons("8"); setNewCourseHours("4");
-      setNewCourseLevel("beginner");
-      setNewCourseVideoLinks(""); setNewCourseSiteLinks("");
       await loadInitialData(user);
       setActiveTab("catalog");
+      return result.raw as { id: number; nome: string };
     } catch (error) {
       handleError(error);
+      return null;
     } finally {
       setBusy(false);
     }
@@ -384,20 +358,12 @@ function AppContent() {
 
     if (activeTab === "teacher")
       return (
-        <TeacherScreen
+        <PublishCourseScreen
           canManage={user.role === "teacher" || user.role === "admin"}
-          title={newCourseTitle} setTitle={setNewCourseTitle}
-          category={newCourseCategory} setCategory={setNewCourseCategory}
-          description={newCourseDescription} setDescription={setNewCourseDescription}
-          pedagogyDescription={newCoursePedagogy} setPedagogyDescription={setNewCoursePedagogy}
-          lessonsCount={newCourseLessons} setLessonsCount={setNewCourseLessons}
-          estimatedHours={newCourseHours} setEstimatedHours={setNewCourseHours}
-          level={newCourseLevel} setLevel={setNewCourseLevel}
-          videoLinksText={newCourseVideoLinks} setVideoLinksText={setNewCourseVideoLinks}
-          siteLinksText={newCourseSiteLinks} setSiteLinksText={setNewCourseSiteLinks}
+          userId={Number(user.user_id)}
+          courses={teacherCourses}
           loading={busy}
           onCreateCourse={handleCreateCourse}
-          courses={teacherCourses}
           onOpenCourse={handleOpenCourse}
           onDeleteCourse={handleDeleteCourse}
         />

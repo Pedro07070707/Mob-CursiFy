@@ -39,7 +39,7 @@ export function CourseCard({ course, onPress }: CourseCardProps) {
           {course.teacher_name}
         </Text>
         <Text style={[styles.meta, { color: theme.colors.textMuted, fontSize: theme.typography.small }]}>
-          {course.lessons_count} aulas • {course.estimated_hours}h • {course.enrolled_count} inscritos
+          {course.carga_horaria}h • {course.enrolled_count} inscritos
         </Text>
       </View>
     </Pressable>

@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "./api";
-import { Course, CreateCoursePayload } from "../types";
+import { Course, CourseMaterial, CreateCoursePayload } from "../types";
 
 interface BackendCourse {
   id: number;
@@ -33,6 +33,7 @@ function mapCourse(course: BackendCourse): Course {
     level: normalizeLevel(course.categoria),
     lessons_count: 0,
     estimated_hours: Number(course.cargaHoraria) || 0,
+    carga_horaria: Number(course.cargaHoraria) || 0,
     thumbnail_base64: "",
     enrolled_count: 0,
     created_at: course.dataCriacao ?? new Date().toISOString(),
@@ -89,13 +90,11 @@ const courseService = {
       nome: payload.title,
       descricao: payload.description,
       categoria: payload.category,
-      cargaHoraria: payload.estimated_hours,
+      cargaHoraria: payload.carga_horaria,
       dataCriacao: new Date().toISOString(),
-      statusCurso: "Ativo",
+      statusCurso: "Em progresso",
     });
-    const course = mapCourse(response.data);
-    await saveLinks(course.course_id, payload.video_links ?? [], payload.site_links ?? []);
-    return { ...course, video_links: payload.video_links ?? [], site_links: payload.site_links ?? [] };
+    return { mapped: mapCourse(response.data), raw: response.data };
   },
 
   update: (_courseId: string, _payload: Partial<CreateCoursePayload>): Promise<Course> =>
@@ -103,6 +102,14 @@ const courseService = {
 
   remove: (courseId: string) =>
     api.delete<void>(`/curso/${courseId}`).then(() => undefined),
+
+  getContentByCourse: async (courseId: string): Promise<CourseMaterial[]> => {
+    const response = await api.get<any[]>("/material", { params: { cursoId: courseId } });
+    const all = Array.isArray(response.data) ? response.data : [];
+    return all
+      .filter((m) => String(m.curso?.id) === courseId)
+      .map((m) => ({ id: m.id, titulo: m.titulo, subtitulo: m.subtitulo, conteudo: m.conteudo, link: m.link, statusMaterial: m.statusMaterial }));
+  },
 
   getProfessorCourses: () => courseService.getAll(),
 };

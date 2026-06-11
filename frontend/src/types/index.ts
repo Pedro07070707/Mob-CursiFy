@@ -44,6 +44,7 @@ export interface Course {
   level: CourseLevel;
   lessons_count: number;
   estimated_hours: number;
+  carga_horaria: number;
   thumbnail_base64: string;
   enrolled_count: number;
   created_at: string;
@@ -55,13 +56,7 @@ export interface CreateCoursePayload {
   title: string;
   category: string;
   description: string;
-  pedagogy_description: string;
-  level: CourseLevel;
-  lessons_count: number;
-  estimated_hours: number;
-  thumbnail_base64: string;
-  video_links: string[];
-  site_links: string[];
+  carga_horaria: number;
 }
 
 export interface Enrollment {
@@ -83,6 +78,15 @@ export interface AdminOverview {
   admins_total: number;
   courses_total: number;
   enrollments_total: number;
+}
+
+export interface CourseMaterial {
+  id: number;
+  titulo: string;
+  subtitulo: string;
+  conteudo: string;
+  link: string;
+  statusMaterial: string;
 }
 
 export type AppTab = "catalog" | "my-courses" | "teacher" | "admin" | "profile" | "chat";

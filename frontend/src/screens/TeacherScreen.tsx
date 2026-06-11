@@ -3,27 +3,20 @@ import { AppButton } from "../components/AppButton";
 import { AppInput } from "../components/AppInput";
 import { CourseCard } from "../components/CourseCard";
 import { useTheme } from "../contexts/ThemeContext";
-import { Course, CourseLevel } from "../types";
+import { Course } from "../types";
 
 interface TeacherScreenProps {
   canManage: boolean;
   title: string; setTitle: (v: string) => void;
   category: string; setCategory: (v: string) => void;
   description: string; setDescription: (v: string) => void;
-  pedagogyDescription: string; setPedagogyDescription: (v: string) => void;
-  lessonsCount: string; setLessonsCount: (v: string) => void;
-  estimatedHours: string; setEstimatedHours: (v: string) => void;
-  level: CourseLevel; setLevel: (v: CourseLevel) => void;
-  videoLinksText: string; setVideoLinksText: (v: string) => void;
-  siteLinksText: string; setSiteLinksText: (v: string) => void;
+  cargaHoraria: string; setCargaHoraria: (v: string) => void;
   loading: boolean;
   onCreateCourse: () => void;
   courses: Course[];
   onOpenCourse: (course: Course) => void;
   onDeleteCourse: (courseId: string) => void;
 }
-
-const levels: CourseLevel[] = ["beginner", "intermediate", "advanced"];
 
 export function TeacherScreen(props: TeacherScreenProps) {
   const { theme } = useTheme();
@@ -49,22 +42,10 @@ export function TeacherScreen(props: TeacherScreenProps) {
           <Text style={{ marginTop: theme.spacing.s, marginBottom: theme.spacing.m, color: theme.colors.textMuted, fontSize: theme.typography.body }}>
             Preencha os dados pedagógicos para publicar no catálogo.
           </Text>
-          <AppInput label="Título" value={props.title} onChangeText={props.setTitle} testID="teacher-title" />
+          <AppInput label="Nome" value={props.title} onChangeText={props.setTitle} testID="teacher-title" />
           <AppInput label="Categoria" value={props.category} onChangeText={props.setCategory} testID="teacher-category" />
           <AppInput label="Descrição" value={props.description} onChangeText={props.setDescription} testID="teacher-description" />
-          <AppInput label="Descrição pedagógica" value={props.pedagogyDescription} onChangeText={props.setPedagogyDescription} testID="teacher-pedagogy" />
-          <AppInput label="🎬 Vídeos (um link por linha)" value={props.videoLinksText} onChangeText={props.setVideoLinksText} testID="teacher-videos" multiline />
-          <AppInput label="🌐 Sites de estudo (um link por linha)" value={props.siteLinksText} onChangeText={props.setSiteLinksText} testID="teacher-sites" multiline />
-          <View style={{ gap: theme.spacing.s }}>
-            <AppInput label="Aulas" keyboardType="numeric" value={props.lessonsCount} onChangeText={props.setLessonsCount} testID="teacher-lessons" />
-            <AppInput label="Horas" keyboardType="numeric" value={props.estimatedHours} onChangeText={props.setEstimatedHours} testID="teacher-hours" />
-          </View>
-          <Text style={{ marginBottom: theme.spacing.s, color: theme.colors.textMain, fontWeight: "600", fontSize: theme.typography.small }}>Nível</Text>
-          <View style={{ flexDirection: "row", gap: theme.spacing.s, marginBottom: theme.spacing.m, flexWrap: "wrap" }}>
-            {levels.map((item) => (
-              <AppButton key={item} label={item === "beginner" ? "Iniciante" : item === "intermediate" ? "Intermediário" : "Avançado"} variant={props.level === item ? "primary" : "outline"} onPress={() => props.setLevel(item)} style={{ minWidth: 100 }} testID={`teacher-level-${item}`} />
-            ))}
-          </View>
+          <AppInput label="Carga Horária (horas)" keyboardType="numeric" value={props.cargaHoraria} onChangeText={props.setCargaHoraria} testID="teacher-carga-horaria" />
           <AppButton label="Publicar curso" onPress={props.onCreateCourse} loading={props.loading} testID="teacher-submit" />
         </View>
       }

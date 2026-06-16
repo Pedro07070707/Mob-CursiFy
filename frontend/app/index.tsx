@@ -204,6 +204,7 @@ function AppContent() {
         role: response.user.role,
         bio: response.user.bio,
         profile_image_base64: response.user.profile_image_base64,
+        cover_image_base64: response.user.cover_image_base64,
         created_at: response.user.created_at,
         active: response.user.active,
       };
@@ -306,6 +307,7 @@ function AppContent() {
         role: updated.role,
         bio: updated.bio,
         profile_image_base64: updated.profile_image_base64,
+        cover_image_base64: updated.cover_image_base64,
         created_at: updated.created_at,
         active: updated.active,
       };
@@ -338,6 +340,7 @@ function AppContent() {
           course={selectedCourse}
           canEnroll={user.role === "student" || user.role === "admin"}
           loading={busy}
+          userId={user.user_id}
           onBack={() => setSelectedCourse(null)}
           onEnroll={handleEnroll}
         />
@@ -348,13 +351,14 @@ function AppContent() {
         <CatalogScreen
           courses={courses}
           loading={screenLoading}
+          userId={user.user_id}
           onOpenCourse={handleOpenCourse}
           onRefresh={handleRefreshCatalog}
         />
       );
 
     if (activeTab === "my-courses")
-      return <MyCoursesScreen enrollments={myEnrollments} onOpenCourse={handleOpenCourseById} />;
+      return <MyCoursesScreen enrollments={myEnrollments} userId={user.user_id} onOpenCourse={handleOpenCourseById} />;
 
     if (activeTab === "teacher")
       return (
@@ -384,6 +388,9 @@ function AppContent() {
         onUpdateProfile={handleUpdateProfile}
         loading={busy}
         feedback={feedback}
+        enrolledCount={myEnrollments.length}
+        completedCount={myEnrollments.filter((e) => e.status === "Concluído").length}
+        studiedHours={myEnrollments.reduce((acc, e) => acc + (e.course.carga_horaria || 0), 0)}
       />
     );
   };

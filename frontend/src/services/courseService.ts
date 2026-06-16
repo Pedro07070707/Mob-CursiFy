@@ -1,6 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "./api";
-import { Course, CourseMaterial, CreateCoursePayload } from "../types";
+import { Course, CourseMaterial, CourseRating, CreateCoursePayload } from "../types";
+
+const FAVORITES_KEY = "cursify_favorites";
+const RATINGS_KEY = "cursify_ratings";
+
+async function getFavoritesMap(): Promise<Record<string, string[]>> {
+  try { const raw = await AsyncStorage.getItem(FAVORITES_KEY); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+}
+
+async function getRatingsMap(): Promise<Record<string, Record<string, number>>> {
+  try { const raw = await AsyncStorage.getItem(RATINGS_KEY); return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+}
 
 interface BackendCourse {
   id: number;
@@ -112,6 +123,35 @@ const courseService = {
   },
 
   getProfessorCourses: () => courseService.getAll(),
+
+  toggleFavorite: async (userId: string, courseId: string): Promise<boolean> => {
+    const map = await getFavoritesMap();
+    const list = map[userId] ?? [];
+    const isFav = list.includes(courseId);
+    map[userId] = isFav ? list.filter((id) => id !== courseId) : [...list, courseId];
+    await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(map));
+    return !isFav;
+  },
+
+  getFavorites: async (userId: string): Promise<string[]> => {
+    const map = await getFavoritesMap();
+    return map[userId] ?? [];
+  },
+
+  rateCourse: async (userId: string, courseId: string, rating: number): Promise<CourseRating> => {
+    const map = await getRatingsMap();
+    if (!map[courseId]) map[courseId] = {};
+    map[courseId][userId] = rating;
+    await AsyncStorage.setItem(RATINGS_KEY, JSON.stringify(map));
+    const ratings = Object.values(map[courseId]);
+    return { average: ratings.reduce((a, b) => a + b, 0) / ratings.length, count: ratings.length, userRating: rating };
+  },
+
+  getRating: async (userId: string, courseId: string): Promise<CourseRating> => {
+    const map = await getRatingsMap();
+    const ratings = map[courseId] ? Object.values(map[courseId]) : [];
+    return { average: ratings.length ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0, count: ratings.length, userRating: map[courseId]?.[userId] ?? 0 };
+  },
 };
 
 export default courseService;

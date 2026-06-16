@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Image, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { AppButton } from "../components/AppButton";
 import { pickCourseImage } from "../constants/images";
 import { useTheme } from "../contexts/ThemeContext";
 import courseService from "../services/courseService";
-import { Course, CourseMaterial } from "../types";
+import { Course, CourseMaterial, CourseRating } from "../types";
 
 interface CourseDetailsScreenProps {
   course: Course;
   canEnroll: boolean;
   loading: boolean;
+  userId: string;
   onBack: () => void;
   onEnroll: () => void;
 }
@@ -23,18 +25,26 @@ const CATEGORIAS: Record<string, string> = {
   OUTROS: "Outros",
 };
 
-export function CourseDetailsScreen({ course, canEnroll, loading, onBack, onEnroll }: CourseDetailsScreenProps) {
+export function CourseDetailsScreen({ course, canEnroll, loading, userId, onBack, onEnroll }: CourseDetailsScreenProps) {
   const { theme } = useTheme();
   const imageUri = course.thumbnail_base64 || pickCourseImage(course.category, course.title);
   const [materiais, setMateriais] = useState<CourseMaterial[]>([]);
   const [loadingContent, setLoadingContent] = useState(true);
+  const [rating, setRating] = useState<CourseRating>({ average: 0, count: 0, userRating: 0 });
 
   useEffect(() => {
     courseService.getContentByCourse(course.course_id)
-      .then(setMateriais)
-      .catch(() => setMateriais([]))
+      .then(setMateriais).catch(() => setMateriais([]))
       .finally(() => setLoadingContent(false));
-  }, [course.course_id]);
+    courseService.getRating(userId, course.course_id).then(setRating);
+  }, [course.course_id, userId]);
+
+  const handleRate = async (star: number) => {
+    const result = await courseService.rateCourse(userId, course.course_id, star);
+    setRating(result);
+  };
+
+  const updatedAt = course.created_at ? new Date(course.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : null;
 
   return (
     <ScrollView
@@ -51,6 +61,25 @@ export function CourseDetailsScreen({ course, canEnroll, loading, onBack, onEnro
       <Text style={{ marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.small }}>
         {course.carga_horaria}h de carga horária
       </Text>
+      {updatedAt && (
+        <Text style={{ marginTop: theme.spacing.s, color: theme.colors.textMuted, fontSize: theme.typography.small }}>
+          🗓 Última atualização: {updatedAt}
+        </Text>
+      )}
+
+      <View style={{ marginTop: theme.spacing.m, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.m }}>
+        <Text style={{ fontWeight: "700", color: theme.colors.textMain, fontSize: theme.typography.small, marginBottom: theme.spacing.s }}>Avalie este curso</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((s) => (
+            <Pressable key={s} onPress={() => handleRate(s)} hitSlop={6}>
+              <Ionicons name={s <= (rating.userRating || Math.round(rating.average)) ? "star" : "star-outline"} size={28} color="#F59E0B" />
+            </Pressable>
+          ))}
+          <Text style={{ color: theme.colors.textMuted, fontSize: theme.typography.small, marginLeft: 8 }}>
+            {rating.average > 0 ? `${rating.average.toFixed(1)} (${rating.count} avaliações)` : "Sem avaliações"}
+          </Text>
+        </View>
+      </View>
 
       <View style={{ marginTop: theme.spacing.l, borderWidth: 1, borderColor: theme.colors.border, backgroundColor: theme.colors.surface, borderRadius: theme.radius.md, padding: theme.spacing.m }}>
         <Text style={{ fontSize: theme.typography.body, fontWeight: "700", color: theme.colors.textMain, marginBottom: theme.spacing.s }}>Descrição do curso</Text>

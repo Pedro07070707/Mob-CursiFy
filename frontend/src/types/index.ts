@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   bio: string;
   profile_image_base64: string;
+  cover_image_base64: string;
   created_at: string;
   active: boolean;
 }
@@ -62,6 +63,7 @@ export interface CreateCoursePayload {
 export interface Enrollment {
   enrollment_id: string;
   enrolled_at: string;
+  status: "Em andamento" | "Concluído";
   course: Course;
 }
 
@@ -69,6 +71,7 @@ export interface UpdateProfilePayload {
   username: string;
   bio: string;
   profile_image_base64: string;
+  cover_image_base64: string;
 }
 
 export interface AdminOverview {
@@ -90,6 +93,19 @@ export interface CourseMaterial {
 }
 
 export type AppTab = "catalog" | "my-courses" | "teacher" | "admin" | "profile" | "chat";
+
+export interface CourseRating {
+  average: number;
+  count: number;
+  userRating: number;
+}
+
+export interface CourseCompletion {
+  completed: boolean;
+  completedAt: string;
+  rating: number;
+  feedback: string;
+}
 
 export interface ChatMessage {
   message_id: string;

@@ -1,4 +1,6 @@
-import { StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../contexts/ThemeContext";
 
 interface AppInputProps extends TextInputProps {
@@ -8,6 +10,8 @@ interface AppInputProps extends TextInputProps {
 
 export function AppInput({ label, prefix, ...props }: AppInputProps) {
   const { theme } = useTheme();
+  const [visible, setVisible] = useState(false);
+  const isPassword = props.secureTextEntry;
   const inputStyle = [
     styles.input,
     {
@@ -30,6 +34,18 @@ export function AppInput({ label, prefix, ...props }: AppInputProps) {
             style={[{ flex: 1, minHeight: 48, fontSize: theme.typography.body, color: theme.colors.textMain, paddingHorizontal: 4 }, props.style]}
             placeholderTextColor={theme.colors.textMuted}
           />
+        </View>
+      ) : isPassword ? (
+        <View style={[styles.input, { borderColor: theme.colors.border, borderRadius: theme.radius.md, backgroundColor: theme.colors.surface, flexDirection: "row", alignItems: "center", paddingHorizontal: 0 }]}>
+          <TextInput
+            {...props}
+            secureTextEntry={!visible}
+            style={[{ flex: 1, minHeight: 48, fontSize: theme.typography.body, color: theme.colors.textMain, paddingHorizontal: 16 }, props.style]}
+            placeholderTextColor={theme.colors.textMuted}
+          />
+          <Pressable onPress={() => setVisible((v) => !v)} style={{ paddingHorizontal: 12 }}>
+            <Ionicons name={visible ? "eye-off-outline" : "eye-outline"} size={20} color={theme.colors.textMuted} />
+          </Pressable>
         </View>
       ) : (
         <TextInput

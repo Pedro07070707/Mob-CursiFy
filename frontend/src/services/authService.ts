@@ -53,6 +53,7 @@ function mapUser(user: BackendUser): User {
     role: mapRole(user.nivelAcesso),
     bio: "",
     profile_image_base64: "",
+    cover_image_base64: "",
     created_at: user.dataCadastro ?? new Date().toISOString(),
     active: isUserActive(user.statusUsuario),
   };
@@ -109,6 +110,10 @@ const authService = {
     const { default: AsyncStorage } = await import("@react-native-async-storage/async-storage");
     const savedBio = await AsyncStorage.getItem(`cursify_bio_${normalizedUser.user_id}`);
     if (savedBio) normalizedUser.bio = savedBio;
+    const savedImage = await AsyncStorage.getItem(`cursify_image_${normalizedUser.user_id}`);
+    if (savedImage) normalizedUser.profile_image_base64 = savedImage;
+    const savedCover = await AsyncStorage.getItem(`cursify_cover_${normalizedUser.user_id}`);
+    if (savedCover) normalizedUser.cover_image_base64 = savedCover;
 
     return {
       access_token: normalizedUser.user_id,
@@ -131,15 +136,29 @@ const authService = {
       ...mapUser(updatedResponse.data),
       bio: payload.bio,
       profile_image_base64: payload.profile_image_base64,
+      cover_image_base64: payload.cover_image_base64,
     };
     const { default: AsyncStorage } = await import("@react-native-async-storage/async-storage");
     await AsyncStorage.setItem(`cursify_bio_${result.user_id}`, payload.bio);
+    if (payload.profile_image_base64) {
+      await AsyncStorage.setItem(`cursify_image_${result.user_id}`, payload.profile_image_base64);
+    }
+    if (payload.cover_image_base64) {
+      await AsyncStorage.setItem(`cursify_cover_${result.user_id}`, payload.cover_image_base64);
+    }
     return result;
   },
 
   getAll: () => api.get<BackendUser[]>("/usuario").then((response) => response.data.map(mapUser)),
   getById: (id: string) => api.get<BackendUser>(`/usuario/${id}`).then((response) => mapUser(response.data)),
   remove: (id: string) => api.delete(`/usuario/${id}`).then(() => undefined),
+
+  resetPassword: async (email: string, newPassword: string) => {
+    const response = await api.get<BackendUser[]>("/usuario");
+    const user = response.data.find((u) => normalizeEmail(u.email) === normalizeEmail(email));
+    if (!user) throw new ApiError("Nenhuma conta encontrada com esse e-mail.", 404);
+    await api.put(`/usuario/${user.id}`, { ...user, senha: normalizePassword(newPassword) });
+  },
 };
 
 export default authService;

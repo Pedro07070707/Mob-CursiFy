@@ -7,6 +7,7 @@ interface BackendUser {
   id: number;
   nome: string;
   email: string;
+  cpf?: string;
   senha: string;
   nivelAcesso: BackendRole;
   dataCadastro: string;
@@ -50,6 +51,7 @@ function mapUser(user: BackendUser): User {
     user_id: String(user.id),
     email: user.email,
     username: user.nome,
+    cpf: user.cpf ?? "",
     role: mapRole(user.nivelAcesso),
     bio: "",
     profile_image_base64: "",
@@ -74,6 +76,7 @@ const authService = {
       .post<BackendUser>("/usuario", {
         nome: payload.username,
         email: normalizeEmail(payload.email),
+        cpf: payload.cpf,
         senha: normalizePassword(payload.password),
         nivelAcesso: mapBackendRole(payload.role),
         dataCadastro: new Date().toISOString(),

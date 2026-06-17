@@ -7,6 +7,7 @@ interface BackendUser {
   id: number;
   nome: string;
   email: string;
+  cpf?: string;
   senha: string;
   nivelAcesso: BackendRole;
   dataCadastro: string;
@@ -28,9 +29,11 @@ function mapUser(user: BackendUser): User {
     user_id: String(user.id),
     email: user.email,
     username: user.nome,
+    cpf: user.cpf ?? "",
     role: mapRole(user.nivelAcesso),
     bio: "",
     profile_image_base64: "",
+    cover_image_base64: "",
     created_at: user.dataCadastro ?? new Date().toISOString(),
     active: user.statusUsuario === true || user.statusUsuario === "Ativo",
   };

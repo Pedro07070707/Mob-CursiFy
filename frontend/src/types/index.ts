@@ -4,6 +4,7 @@ export interface User {
   user_id: string;
   email: string;
   username: string;
+  cpf: string;
   role: UserRole;
   bio: string;
   profile_image_base64: string;
@@ -21,6 +22,7 @@ export interface AuthResponse {
 export interface RegisterPayload {
   email: string;
   username: string;
+  cpf: string;
   password: string;
   role: UserRole;
   bio: string;

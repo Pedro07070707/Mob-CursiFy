@@ -27,6 +27,18 @@ function validatePassword(password: string): boolean {
   return /[a-zA-Z]/.test(password) && /\d/.test(password) && password.length >= 8 && password.length <= 20;
 }
 
+function onlyDigits(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+function formatCpf(value: string): string {
+  const digits = onlyDigits(value).slice(0, 11);
+  return digits
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+}
+
 export function AuthScreen(props: AuthScreenProps) {
   const { theme } = useTheme();
   const {
@@ -38,6 +50,7 @@ export function AuthScreen(props: AuthScreenProps) {
 
   const [registerName, setRegisterName] = useState("");
   const [registerEmail, setRegisterEmail] = useState("");
+  const [registerCpf, setRegisterCpf] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
   const [registerRole, setRegisterRole] = useState<UserRole>("student");
   const [registerBio, setRegisterBio] = useState("");
@@ -102,6 +115,10 @@ export function AuthScreen(props: AuthScreenProps) {
       setRegisterError("A senha deve ter entre 8 e 20 caracteres, incluindo letras e números.");
       return;
     }
+    if (onlyDigits(registerCpf).length !== 11) {
+      setRegisterError("Informe um CPF com 11 dígitos.");
+      return;
+    }
     if (registerRole !== "student" && registerBio.trim().length < 3) {
       setRegisterError("Professores e admins precisam preencher a bio.");
       return;
@@ -113,12 +130,13 @@ export function AuthScreen(props: AuthScreenProps) {
       await authService.create({
         username: registerName.trim(),
         email: emailToLogin,
+        cpf: onlyDigits(registerCpf),
         password: passwordToLogin,
         role: registerRole,
         bio: registerBio.trim(),
         profile_image_base64: "",
       });
-      setRegisterName(""); setRegisterEmail(""); setRegisterPassword("");
+      setRegisterName(""); setRegisterEmail(""); setRegisterCpf(""); setRegisterPassword("");
       setRegisterBio(""); setRegisterRole("student");
       onLoginWithCredentials(emailToLogin, passwordToLogin);
     } catch (error: unknown) {
@@ -170,6 +188,7 @@ export function AuthScreen(props: AuthScreenProps) {
           <View style={{ borderWidth: 1, borderColor: theme.colors.border, borderRadius: theme.radius.lg, backgroundColor: theme.colors.surface, padding: theme.spacing.m }}>
             <AppInput label="Nome" placeholder="Seu nome no app" value={registerName} onChangeText={setRegisterName} testID="register-name" />
             <AppInput label="E-mail" placeholder="voce@exemplo.com" keyboardType="email-address" autoCapitalize="none" value={registerEmail} onChangeText={setRegisterEmail} testID="register-email" />
+            <AppInput label="CPF" placeholder="000.000.000-00" keyboardType="number-pad" value={registerCpf} onChangeText={(value) => setRegisterCpf(formatCpf(value))} maxLength={14} testID="register-cpf" />
             <AppInput label="Senha" placeholder="8 a 20 caracteres, letras e números" secureTextEntry value={registerPassword} onChangeText={setRegisterPassword} testID="register-password" />
 
             <Text style={{ marginBottom: theme.spacing.s, fontWeight: "600", color: theme.colors.textMain, fontSize: theme.typography.small }}>Perfil</Text>

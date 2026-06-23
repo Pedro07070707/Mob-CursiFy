@@ -133,7 +133,7 @@ function AppContent() {
   // ─── Abas dinâmicas por role ───────────────────────────────────────────────
   const tabs = useMemo(() => {
     if (!user) return [];
-    const base: { key: AppTab; label: string; icon: "home-outline" | "book-outline" | "school-outline" | "shield-checkmark-outline" | "person-outline" | "chatbubbles-outline" }[] = [
+    const base: { key: AppTab; label: string; icon: "home-outline" | "book-outline" | "school-outline" | "shield-checkmark-outline" | "person-outline" | "chatbubbles-outline"; badge?: number }[] = [
       { key: "catalog", label: "Catálogo", icon: "home-outline" },
       { key: "my-courses", label: "Cursos", icon: "book-outline" },
     ];
@@ -201,6 +201,7 @@ function AppContent() {
         user_id: response.user.user_id,
         email: response.user.email,
         username: response.user.username,
+        cpf: response.user.cpf,
         role: response.user.role,
         bio: response.user.bio,
         profile_image_base64: response.user.profile_image_base64,

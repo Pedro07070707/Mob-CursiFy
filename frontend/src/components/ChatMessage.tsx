@@ -9,14 +9,14 @@ interface ChatMessageProps {
 }
 
 export default function ChatMessage({ message, isOwnMessage }: ChatMessageProps) {
-  const { colors } = useTheme();
+  const { theme } = useTheme();
 
   return (
     <View style={[styles.container, isOwnMessage && styles.ownMessage]}>
-      <View style={[styles.bubble, { backgroundColor: isOwnMessage ? colors.primary : colors.surface }]}>
-        {!isOwnMessage && <Text style={[styles.sender, { color: colors.primary }]}>{message.sender_name}</Text>}
-        <Text style={[styles.content, { color: isOwnMessage ? "#fff" : colors.text }]}>{message.content}</Text>
-        <Text style={[styles.time, { color: isOwnMessage ? "#fff9" : colors.textSecondary }]}>
+      <View style={[styles.bubble, { backgroundColor: isOwnMessage ? theme.colors.primary : theme.colors.surface }]}>
+        {!isOwnMessage && <Text style={[styles.sender, { color: theme.colors.primary }]}>{message.sender_name}</Text>}
+        <Text style={[styles.content, { color: isOwnMessage ? "#fff" : theme.colors.textMain }]}>{message.content}</Text>
+        <Text style={[styles.time, { color: isOwnMessage ? "#fff9" : theme.colors.textMuted }]}>
           {new Date(message.created_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </Text>
       </View>

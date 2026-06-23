@@ -8,10 +8,10 @@ interface BackendUser {
   nome: string;
   email: string;
   cpf?: string;
-  senha: string;
+  senha?: string;
   nivelAcesso: BackendRole;
-  dataCadastro: string;
-  statusUsuario: string | boolean;
+  dataCadastro?: string;
+  statusUsuario?: string | boolean;
 }
 
 function mapRole(role: BackendRole): User["role"] {
@@ -27,6 +27,7 @@ function mapBackendRole(role: User["role"]): BackendRole {
 }
 
 function isUserActive(status: BackendUser["statusUsuario"]) {
+  if (status == null) return true;
   return status === true || status === "Ativo";
 }
 
@@ -44,6 +45,10 @@ function normalizeEmail(value: unknown) {
 
 function normalizePassword(value: unknown) {
   return normalizeText(value);
+}
+
+function normalizeCpf(value: unknown) {
+  return String(value ?? "").replace(/\D/g, "");
 }
 
 function mapUser(user: BackendUser): User {
@@ -72,11 +77,16 @@ function requireAuthenticatedUserId() {
 
 const authService = {
   create: async (payload: RegisterPayload) => {
+    const cpf = normalizeCpf(payload.cpf);
+    if (cpf.length !== 11) {
+      throw new ApiError("Informe um CPF com 11 digitos.", 400);
+    }
+
     const user = await api
       .post<BackendUser>("/usuario", {
         nome: payload.username,
         email: normalizeEmail(payload.email),
-        cpf: payload.cpf,
+        cpf,
         senha: normalizePassword(payload.password),
         nivelAcesso: mapBackendRole(payload.role),
         dataCadastro: new Date().toISOString(),
@@ -91,23 +101,11 @@ const authService = {
   },
 
   login: async (payload: LoginPayload): Promise<AuthResponse> => {
-    const response = await api.get<BackendUser[]>("/usuario");
-    const normalizedEmail = normalizeEmail(payload.email);
-    const normalizedPassword = normalizePassword(payload.password);
-    const matchingEmailUsers = response.data.filter(
-      (entry) => normalizeEmail(entry.email) === normalizedEmail,
-    );
-    const user = matchingEmailUsers.find(
-      (entry) => normalizePassword(entry.senha) === normalizedPassword,
-    );
-
-    if (!user) {
-      throw new ApiError("Email ou senha incorretos.", 401);
-    }
-
-    if (!isUserActive(user.statusUsuario)) {
-      throw new ApiError("Sua conta foi desativada. Entre em contato com o administrador.", 403);
-    }
+    const response = await api.post<BackendUser>("/usuario/login", {
+      email: normalizeEmail(payload.email),
+      senha: normalizePassword(payload.password),
+    });
+    const user = response.data;
 
     const normalizedUser = mapUser(user);
     const { default: AsyncStorage } = await import("@react-native-async-storage/async-storage");

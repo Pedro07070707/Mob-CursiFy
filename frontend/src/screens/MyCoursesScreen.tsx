@@ -135,6 +135,7 @@ export function MyCoursesScreen({ enrollments, userId, onOpenCourse }: MyCourses
                 <View key={item.enrollment_id} style={{ marginBottom: theme.spacing.s }}>
                   <View>
                     <CourseCard course={item.course} onPress={() => onOpenCourse(item.course.course_id)} />
+                    <Text style={{ color: theme.colors.textMuted, marginTop: 4 }}>Progresso: {item.course.progresso ?? 0}%</Text>
                     <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
                       <Ionicons name={statusIcon} size={13} color="#fff" />
                       <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>{item.status}</Text>

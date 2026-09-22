@@ -50,6 +50,7 @@ export interface Course {
   carga_horaria: number;
   thumbnail_base64: string;
   enrolled_count: number;
+  progresso?: number;
   created_at: string;
   video_links: string[];
   site_links: string[];
@@ -92,6 +93,15 @@ export interface CourseMaterial {
   conteudo: string;
   link: string;
   statusMaterial: string;
+}
+
+export interface CourseExercise {
+  id: number;
+  titulo: string;
+  enunciado: string;
+  alternativas: string[];
+  respostaCorreta: string;
+  explicacao?: string;
 }
 
 export type AppTab = "catalog" | "my-courses" | "teacher" | "admin" | "profile" | "chat";

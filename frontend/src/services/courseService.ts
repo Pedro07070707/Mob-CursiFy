@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { api } from "./api";
-import { Course, CourseMaterial, CourseRating, CreateCoursePayload } from "../types";
+import { Course, CourseExercise, CourseMaterial, CourseRating, CreateCoursePayload } from "../types";
 
 const FAVORITES_KEY = "cursify_favorites";
 const RATINGS_KEY = "cursify_ratings";
@@ -46,7 +46,7 @@ function mapCourse(course: BackendCourse): Course {
     estimated_hours: Number(course.cargaHoraria) || 0,
     carga_horaria: Number(course.cargaHoraria) || 0,
     thumbnail_base64: "",
-    enrolled_count: 0,
+    enrolled_count: Number((course as any).enrolledCount ?? (course as any).enrolled_count ?? 0),
     created_at: course.dataCriacao ?? new Date().toISOString(),
     video_links: [],
     site_links: [],
@@ -76,13 +76,21 @@ const courseService = {
       api.get<BackendCourse[]>("/curso"),
       loadLinksMap(),
     ]);
-    return response.data
+    const activeCourses = response.data
       .filter((course) => isCourseActive(course.statusCurso))
       .map((course) => ({
         ...mapCourse(course),
         ...(linksMap[String(course.id)] ?? { video_links: [], site_links: [] }),
-      }))
-      .filter((course) => !category || course.category === category);
+      }));
+    const coursesWithEnrollment = await Promise.all(activeCourses.map(async (course) => {
+      try {
+        const occupancy = await api.get<{ matriculados: number }>(`/usuarioCurso/ocupacao/${course.course_id}`);
+        return { ...course, enrolled_count: Number(occupancy.data.matriculados) || 0 };
+      } catch {
+        return course;
+      }
+    }));
+    return coursesWithEnrollment.filter((course) => !category || course.category === category);
   },
 
   getById: async (courseId: string) => {
@@ -118,8 +126,34 @@ const courseService = {
     const response = await api.get<any[]>("/material", { params: { cursoId: courseId } });
     const all = Array.isArray(response.data) ? response.data : [];
     return all
-      .filter((m) => String(m.curso?.id) === courseId)
-      .map((m) => ({ id: m.id, titulo: m.titulo, subtitulo: m.subtitulo, conteudo: m.conteudo, link: m.link, statusMaterial: m.statusMaterial }));
+      .filter((m) => String(m.curso?.id ?? m.curso_id ?? m.cursoId) === courseId)
+      .map((m) => ({ id: m.id, titulo: m.titulo ?? '', subtitulo: m.subtitulo ?? '', conteudo: m.conteudo ?? '', link: m.link ?? '', statusMaterial: m.statusMaterial ?? '' }));
+  },
+
+  getExercisesByCourse: async (courseId: string): Promise<CourseExercise[]> => {
+    const response = await api.get<any[]>("/exercicios");
+    return (response.data ?? [])
+      .filter((item) => String(item.curso?.id ?? item.curso_id ?? item.cursoId) === courseId)
+      .map((item) => ({ id: item.id, titulo: item.titulo ?? "Exercício", enunciado: item.enunciado ?? item.conteudo ?? "", alternativas: Array.isArray(item.alternativas) ? item.alternativas.filter(Boolean) : [], respostaCorreta: item.respostaCorreta ?? "", explicacao: item.explicacao }));
+  },
+
+  getProgress: async (userId: string, courseId: string) => {
+    try {
+      const response = await api.get<{ progresso: number; concluido?: boolean }>(`/usuarioCurso/progresso/${userId}/${courseId}`);
+      const individual = Number(response.data?.progresso) || 0;
+      const rows = await api.get<any[]>("/usuarioCurso");
+      const row = (rows.data ?? []).find((item) => String(item.usuario?.id ?? item.usuario_id) === String(userId) && String(item.curso?.id ?? item.curso_id) === String(courseId));
+      return { ...response.data, progresso: Math.max(individual, Number(row?.progresso) || 0) };
+    } catch {
+      const response = await api.get<any[]>("/usuarioCurso");
+      const row = (response.data ?? []).find((item) => String(item.usuario?.id ?? item.usuario_id) === String(userId) && String(item.curso?.id ?? item.curso_id) === String(courseId));
+      return { progresso: Number(row?.progresso) || 0, concluido: Boolean(row?.concluido) };
+    }
+  },
+
+  saveProgress: async (userId: string, courseId: string, progresso: number) => {
+    const response = await api.put(`/usuarioCurso/progresso/${userId}/${courseId}`, { progresso, concluido: progresso >= 100 });
+    return response.data;
   },
 
   getProfessorCourses: () => courseService.getAll(),

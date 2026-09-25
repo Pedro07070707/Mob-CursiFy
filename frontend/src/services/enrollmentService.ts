@@ -26,10 +26,7 @@ async function saveEnrollmentState(userId: string, state: EnrollmentState) {
 
 const enrollmentService = {
   getAll: async (userId: string): Promise<Enrollment[]> => {
-    const [state, completionsRaw] = await Promise.all([
-      getEnrollmentState(userId),
-      AsyncStorage.getItem(COMPLETION_KEY),
-    ]);
+    const [state, completionsRaw] = await Promise.all([getEnrollmentState(userId), AsyncStorage.getItem(COMPLETION_KEY)]);
     const completions: Record<string, { completed: boolean }> = completionsRaw
       ? (JSON.parse(completionsRaw)[userId] ?? {})
       : {};
@@ -37,10 +34,8 @@ const enrollmentService = {
     const backendRows = await api.get<any[]>("/usuarioCurso");
     const backendEnrollments = (backendRows.data ?? []).filter((row) => String(row.usuario?.id ?? row.usuario_id) === String(userId));
     const enrolledIds = backendEnrollments.map((row) => String(row.curso?.id ?? row.curso_id));
-    const localIds = Object.entries(state)
-      .filter(([, entry]) => entry.enrolled)
-      .map(([courseId]) => courseId);
-    const allEnrolledIds = [...new Set([...enrolledIds, ...localIds])];
+    // O banco é a fonte de verdade; o estado local não pode criar matrículas falsas.
+    const allEnrolledIds = [...new Set(enrolledIds)];
 
     if (allEnrolledIds.length === 0) return [];
 
@@ -54,12 +49,12 @@ const enrollmentService = {
         const progresso = Number(row?.progresso) || 0;
         return {
           enrollment_id: `${userId}-${courseId}`,
-          enrolled_at: state[courseId]?.updatedAt ?? new Date().toISOString(),
-          status: (progresso >= 100 || completions[courseId]?.completed ? "Concluído" : "Em andamento") as "Em andamento" | "Concluído",
+          enrolled_at: row?.dataCadastro ?? row?.createdAt ?? new Date().toISOString(),
+          status: (progresso >= 100 ? "Concluído" : "Em andamento") as "Em andamento" | "Concluído",
           course: { ...course, progresso },
         };
       })
-      .filter((item): item is Enrollment => item !== null);
+      .filter(Boolean) as Enrollment[];
   },
 
   create: async (userId: string, courseId: string) => {

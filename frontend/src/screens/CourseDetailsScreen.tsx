@@ -10,6 +10,7 @@ import { Course, CourseExercise, CourseMaterial, CourseRating } from "../types";
 interface CourseDetailsScreenProps {
   course: Course;
   canEnroll: boolean;
+  enrolled?: boolean;
   loading: boolean;
   userId: string;
   onBack: () => void;
@@ -25,7 +26,7 @@ const CATEGORIAS: Record<string, string> = {
   OUTROS: "Outros",
 };
 
-export function CourseDetailsScreen({ course, canEnroll, loading, userId, onBack, onEnroll }: CourseDetailsScreenProps) {
+export function CourseDetailsScreen({ course, canEnroll, enrolled = false, loading, userId, onBack, onEnroll }: CourseDetailsScreenProps) {
   const { theme } = useTheme();
   const imageUri = course.thumbnail_base64 || pickCourseImage(course.category, course.title);
   const [materiais, setMateriais] = useState<CourseMaterial[]>([]);
@@ -42,7 +43,7 @@ export function CourseDetailsScreen({ course, canEnroll, loading, userId, onBack
       .catch(() => setMateriais([]))
       .finally(() => setLoadingContent(false));
     courseService.getExercisesByCourse(course.course_id).then((items) => setExercicios([...new Map(items.map((item) => [item.id ?? `${item.titulo}|${item.enunciado}`, item])).values()])).catch(() => setExercicios([]));
-    courseService.getProgress(userId, course.course_id).then((value) => setProgresso(Math.max(Number(course.progresso) || 0, Number(value.progresso) || 0))).catch(() => setProgresso(Number(course.progresso) || 0));
+    courseService.getProgress(userId, course.course_id).then((value) => setProgresso(Math.max(0, Math.min(100, Number(value.progresso) || 0)))).catch(() => setProgresso(0));
     courseService.getRating(userId, course.course_id).then(setRating);
   }, [course.course_id, userId]);
 
@@ -140,7 +141,8 @@ export function CourseDetailsScreen({ course, canEnroll, loading, userId, onBack
 
       <View style={[styles.actions, { marginTop: theme.spacing.l, gap: theme.spacing.s }]}> 
         <AppButton label="Voltar" variant="secondary" onPress={onBack} style={styles.half} testID="course-back" />
-        {canEnroll && <AppButton label="Inscrever-se" onPress={onEnroll} loading={loading} style={styles.half} testID="course-enroll" />}
+        {canEnroll && !enrolled && <AppButton label="Inscrever-se" onPress={onEnroll} loading={loading} style={styles.half} testID="course-enroll" />}
+        {enrolled && <AppButton label="Já inscrito" disabled onPress={() => undefined} style={styles.half} testID="course-enrolled" />}
       </View>
     </ScrollView>
   );

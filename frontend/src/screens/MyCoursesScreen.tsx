@@ -135,7 +135,6 @@ export function MyCoursesScreen({ enrollments, userId, onOpenCourse }: MyCourses
                 <View key={item.enrollment_id} style={{ marginBottom: theme.spacing.s }}>
                   <View>
                     <CourseCard course={item.course} onPress={() => onOpenCourse(item.course.course_id)} />
-                    <Text style={{ color: theme.colors.textMuted, marginTop: 4 }}>Progresso: {item.course.progresso ?? 0}%</Text>
                     <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
                       <Ionicons name={statusIcon} size={13} color="#fff" />
                       <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700", marginLeft: 4 }}>{item.status}</Text>
@@ -153,15 +152,6 @@ export function MyCoursesScreen({ enrollments, userId, onOpenCourse }: MyCourses
                         </Text>
                       </TouchableOpacity>
                     )}
-                    <TouchableOpacity
-                      onPress={() => openModal(item.course.course_id)}
-                      style={{ paddingHorizontal: theme.spacing.m, paddingVertical: theme.spacing.s, backgroundColor: isDone ? "#D1FAE5" : theme.colors.primary, justifyContent: "center", alignItems: "center", flexDirection: "row" }}
-                    >
-                      <Ionicons name={isDone ? "ribbon" : "checkmark-done"} size={14} color={isDone ? "#10B981" : "#fff"} />
-                      <Text style={{ color: isDone ? "#10B981" : "#fff", fontWeight: "700", fontSize: theme.typography.small, marginLeft: 4 }}>
-                        {isDone ? "Curso finalizado" : "Finalizar curso"}
-                      </Text>
-                    </TouchableOpacity>
                   </View>
 
                   {isOpen && (

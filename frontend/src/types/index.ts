@@ -11,6 +11,7 @@ export interface User {
   cover_image_base64: string;
   created_at: string;
   active: boolean;
+  tema_preferido?: "light" | "dark";
 }
 
 export interface AuthResponse {
@@ -75,6 +76,7 @@ export interface UpdateProfilePayload {
   bio: string;
   profile_image_base64: string;
   cover_image_base64: string;
+  tema_preferido?: "light" | "dark";
 }
 
 export interface AdminOverview {

@@ -37,6 +37,8 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
   const [bio, setBio] = useState(user.bio);
   const [localImage, setLocalImage] = useState<string | null>(null);
   const [localCover, setLocalCover] = useState<string | null>(null);
+  const [profileCode, setProfileCode] = useState("");
+  const [codeRequested, setCodeRequested] = useState(false);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -73,12 +75,20 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
   const coverSource = localCover ?? user.cover_image_base64 ?? null;
 
   const handleSave = async () => {
+    if (!codeRequested) {
+      await authService.requestProfileCode();
+      setCodeRequested(true);
+      return;
+    }
+    await authService.confirmProfileCode(profileCode);
     await onUpdateProfile({
       username: username.trim(),
       bio: bio.trim(),
       profile_image_base64: localImage ?? user.profile_image_base64,
       cover_image_base64: localCover ?? user.cover_image_base64,
     });
+    setCodeRequested(false);
+    setProfileCode("");
     setEditing(false);
   };
 
@@ -147,8 +157,9 @@ export function ProfileScreen({ user, onLogout, onUpdateProfile, loading, feedba
           <View style={[styles.card, { borderColor: theme.colors.border, backgroundColor: theme.colors.surface, marginBottom: theme.spacing.m }]}>
             <AppInput label="Username" value={username} onChangeText={setUsername} testID="profile-username" />
             <AppInput label="Biografia" value={bio} onChangeText={setBio} testID="profile-bio" />
+            {codeRequested && <AppInput label="Código enviado por e-mail" value={profileCode} onChangeText={(value) => setProfileCode(value.replace(/\D/g, "").slice(0, 6))} keyboardType="number-pad" maxLength={6} testID="profile-code" />}
             <View style={{ flexDirection: "row", gap: theme.spacing.s, marginTop: theme.spacing.s }}>
-              <AppButton label="Salvar" onPress={handleSave} loading={loading} style={{ flex: 1 }} testID="profile-save" />
+              <AppButton label={codeRequested ? "Confirmar alterações" : "Salvar"} onPress={handleSave} loading={loading} style={{ flex: 1 }} testID="profile-save" />
               <AppButton label="Cancelar" variant="outline" onPress={() => setEditing(false)} style={{ flex: 1 }} testID="profile-cancel" />
             </View>
           </View>

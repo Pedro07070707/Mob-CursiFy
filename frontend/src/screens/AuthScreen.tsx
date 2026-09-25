@@ -76,7 +76,7 @@ export function AuthScreen(props: AuthScreenProps) {
     setForgotLoading(true);
     try {
       await authService.resetPassword(forgotEmail.trim(), forgotNewPassword);
-      setForgotSuccess("Senha redefinida com sucesso! Faça login.");
+      setForgotSuccess("Senha redefinida. Faça login.");
       setForgotEmail(""); setForgotNewPassword(""); setForgotConfirm("");
       setTimeout(() => { setForgotVisible(false); setForgotSuccess(""); }, 2000);
     } catch (e: unknown) {

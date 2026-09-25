@@ -301,7 +301,7 @@ function AppContent() {
       };
       await AsyncStorage.setItem(SESSION_KEY, JSON.stringify({ token, user: updatedUser }));
       setAuthToken(token);
-      showFeedback("Perfil atualizado com sucesso.");
+      showFeedback("Perfil atualizado.");
     } catch (error) {
       handleError(error);
     } finally {

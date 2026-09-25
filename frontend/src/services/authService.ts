@@ -106,6 +106,8 @@ const authService = {
         cpf,
         senha: normalizePassword(payload.password),
         nivelAcesso: mapBackendRole(payload.role),
+        bio: payload.bio ?? "",
+        temaPreferido: payload.tema_preferido ?? "light",
         dataCadastro: new Date().toISOString(),
         statusUsuario: "Ativo",
       })
@@ -143,10 +145,10 @@ const authService = {
 
     const result = {
       ...mapUser(updatedResponse.data),
-      bio: payload.bio,
-      profile_image_base64: payload.profile_image_base64,
-      cover_image_base64: payload.cover_image_base64,
-      tema_preferido: payload.tema_preferido,
+      bio: updatedResponse.data.bio ?? "",
+      profile_image_base64: toImageUri(updatedResponse.data.foto),
+      cover_image_base64: toImageUri(updatedResponse.data.fotoCapa),
+      tema_preferido: updatedResponse.data.temaPreferido === "dark" ? "dark" : "light",
     };
     return result;
   },
@@ -155,6 +157,16 @@ const authService = {
     const userId = requireAuthenticatedUserId();
     const response = await api.put<{ temaPreferido: "light" | "dark" }>(`/usuario/${userId}/tema`, { temaPreferido: theme });
     return response.data.temaPreferido;
+  },
+
+  requestProfileCode: async () => {
+    const userId = requireAuthenticatedUserId();
+    await api.post("/recuperacao-senha/perfil/solicitar-codigo", { usuarioId: Number(userId) });
+  },
+
+  confirmProfileCode: async (code: string) => {
+    const userId = requireAuthenticatedUserId();
+    await api.post("/recuperacao-senha/perfil/confirmar", { usuarioId: Number(userId), codigo: code });
   },
 
   getAll: () => api.get<BackendUser[]>("/usuario").then((response) => response.data.map(mapUser)),
